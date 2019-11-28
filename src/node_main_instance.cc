@@ -232,6 +232,11 @@ std::unique_ptr<Environment> NodeMainInstance::CreateMainEnvironment(
   env->InitializeLibuv(per_process::v8_is_profiling);
   env->InitializeDiagnostics();
 
+  if (!script.empty()) {
+    env->options()->has_eval_string = true;
+    env->options()->eval_string = script;
+  }
+
   // TODO(joyeecheung): when we snapshot the bootstrapped context,
   // the inspector and diagnostics setup should after after deserialization.
 #if HAVE_INSPECTOR
