@@ -485,6 +485,7 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
   // (See also [ssl_openssl_cert_store] below.)
   AddOption("[has_eval_string]", "", &EnvironmentOptions::has_eval_string);
   AddOption("--eval", "evaluate script", &EnvironmentOptions::eval_string);
+  AddOption("--input-args", "set input aruments for script", &EnvironmentOptions::input_args_json);
   Implies("--eval", "[has_eval_string]");
   AddOption("--print",
             "evaluate script and print result",

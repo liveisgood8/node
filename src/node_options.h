@@ -167,6 +167,8 @@ class EnvironmentOptions : public Options {
 
   std::vector<std::string> user_argv;
 
+  std::string input_args_json;
+
   inline DebugOptions* get_debug_options();
   inline const DebugOptions& debug_options() const;
   void CheckOptions(std::vector<std::string>* errors) override;
