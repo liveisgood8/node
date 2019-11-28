@@ -111,6 +111,10 @@ void NodeMainInstance::SetScript(const std::string& script) {
   this->script = script;
 }
 
+void NodeMainInstance::SetInputArgsJson(const std::string& inputArgsJson) {
+  this->inputArgsJson = inputArgsJson;
+}
+
 int NodeMainInstance::Run() {
   Locker locker(isolate_);
   Isolate::Scope isolate_scope(isolate_);
@@ -232,9 +236,15 @@ std::unique_ptr<Environment> NodeMainInstance::CreateMainEnvironment(
   env->InitializeLibuv(per_process::v8_is_profiling);
   env->InitializeDiagnostics();
 
+  // Set force eval script
   if (!script.empty()) {
     env->options()->has_eval_string = true;
     env->options()->eval_string = script;
+  }
+
+  // Set force input args
+  if (!inputArgsJson.empty()) {
+    env->options()->input_args_json = inputArgsJson;
   }
 
   // TODO(joyeecheung): when we snapshot the bootstrapped context,

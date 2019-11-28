@@ -55,6 +55,7 @@ class NodeMainInstance {
   ~NodeMainInstance();
 
   void SetScript(const std::string& script);
+  void SetInputArgsJson(const std::string& inputArgsJson);
 
   // Start running the Node.js instances, return the exit code when finished.
   int Run();
@@ -93,6 +94,7 @@ class NodeMainInstance {
   bool deserialize_mode_ = false;
 
   std::string script;
+  std::string inputArgsJson;
 };
 
 }  // namespace node

@@ -26,6 +26,9 @@
 #include "node.h"
 
 
+#define SHARED_LIB
+
+
 #ifdef SHARED_LIB
 extern "C" NODE_EXTERN int __stdcall MainStart(int argc, char* argv[]) {
   return node::Start(argc, argv);
@@ -35,8 +38,8 @@ extern "C" NODE_EXTERN int __stdcall Init(int argc, char* argv[]) {
   return node::InitFully(argc, argv);
 }
 
-extern "C" NODE_EXTERN int __stdcall Eval(const char* script) {
-  return node::EvalScript(script);
+extern "C" NODE_EXTERN int __stdcall Eval(const char* script, const char* inputArgsJson) {
+  return node::EvalScript(script, inputArgsJson);
 }
 
 extern "C" NODE_EXTERN void __stdcall TearDown() {

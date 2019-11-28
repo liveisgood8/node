@@ -1016,14 +1016,13 @@ void TearDownOncePerProcess() {
 void CreateLogDirecroryIfNotExist() {
   constexpr const char* log_dir_path = "Log\\";
 
-  struct stat info{};
+  struct stat info {};
 
-  if (stat(log_dir_path, &info) != 0 || !(info.st_mode & S_IFDIR))
-  {
+  if (stat(log_dir_path, &info) != 0 || !(info.st_mode & S_IFDIR)) {
     constexpr int nMode = 0777;  // UNIX style permissions
     int nError = 0;
 #if defined(_WIN32)
-    nError = _mkdir(log_dir_path); 
+    nError = _mkdir(log_dir_path);
 #else
     nError = mkdir(log_dir_path, nMode);
 #endif
@@ -1075,7 +1074,7 @@ int Stop(Environment* env) {
   return 0;
 }
 
-NODE_EXTERN int EvalScript(const char* script) {
+NODE_EXTERN int EvalScript(const char* script, const char* inputArgsJson) {
   Isolate::CreateParams params;
   const std::vector<size_t>* indexes = nullptr;
   std::vector<intptr_t> external_references;
@@ -1099,10 +1098,16 @@ NODE_EXTERN int EvalScript(const char* script) {
   NodeMainInstance main_instance(&params,
                                  uv_loop,
                                  per_process::v8_platform.Platform(),
-                                 {"eval_script"},
-                                 {"--eval", script},
+                                 {},
+                                 {},
                                  indexes);
-  main_instance.SetScript(script);
+
+  if (script) {
+    main_instance.SetScript(script);
+  }
+  if (inputArgsJson) {
+    main_instance.SetInputArgsJson(inputArgsJson);
+  }
 
   auto result = main_instance.Run();
 
