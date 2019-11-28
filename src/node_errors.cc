@@ -1,5 +1,6 @@
 #include <cerrno>
 #include <cstdarg>
+#include <iostream>
 
 #include "node_errors.h"
 #include "node_internals.h"
@@ -150,26 +151,18 @@ void PrintStackTrace(Isolate* isolate, Local<StackTrace> stack) {
 
     if (stack_frame->IsEval()) {
       if (stack_frame->GetScriptId() == Message::kNoScriptIdInfo) {
-        fprintf(stderr, "    at [eval]:%i:%i\n", line_number, column);
+        std::cerr << "    at [eval]:" << line_number << ":" << column << "\n";
       } else {
-        fprintf(stderr,
-                "    at [eval] (%s:%i:%i)\n",
-                *script_name,
-                line_number,
-                column);
+        std::cerr << "    at [eval] (" << *script_name << ":" << line_number << ":" <<column << ")\n";
       }
       break;
     }
 
     if (fn_name_s.length() == 0) {
-      fprintf(stderr, "    at %s:%i:%i\n", *script_name, line_number, column);
+      std::cerr << "    at " << *script_name << ":" << line_number << ":" << column << "\n";
     } else {
-      fprintf(stderr,
-              "    at %s (%s:%i:%i)\n",
-              *fn_name_s,
-              *script_name,
-              line_number,
-              column);
+      std::cerr << "    at " << *fn_name_s << " (" << *script_name << ":"
+                << line_number << ":" << column << ")\n";
     }
   }
   fflush(stderr);
@@ -179,14 +172,13 @@ void PrintException(Isolate* isolate,
                     Local<Context> context,
                     Local<Value> err,
                     Local<Message> message) {
-  node::Utf8Value reason(isolate,
-                         err->ToDetailString(context)
-                             .FromMaybe(Local<String>()));
+  node::Utf8Value reason(
+      isolate, err->ToDetailString(context).FromMaybe(Local<String>()));
   bool added_exception_line = false;
   std::string source =
       GetErrorSource(isolate, context, message, &added_exception_line);
-  fprintf(stderr, "%s\n", source.c_str());
-  fprintf(stderr, "%s\n", *reason);
+  std::cerr << source.c_str() << "\n";
+  std::cerr << *reason << "\n";
 
   Local<v8::StackTrace> stack = message->GetStackTrace();
   if (!stack.IsEmpty()) PrintStackTrace(isolate, stack);
@@ -248,18 +240,13 @@ void AppendExceptionLine(Environment* env,
   ABORT_NO_BACKTRACE();
 }
 
-[[noreturn]] void Assert(const AssertionInfo& info) {
+    [[noreturn]] void Assert(const AssertionInfo& info) {
   char name[1024];
   GetHumanReadableProcessName(&name);
 
-  fprintf(stderr,
-          "%s: %s:%s%s Assertion `%s' failed.\n",
-          name,
-          info.file_line,
-          info.function,
-          *info.function ? ":" : "",
-          info.message);
-  fflush(stderr);
+  std::cerr << name << ": " << info.file_line << ":" << info.function
+            << (*info.function ? ":" : "") << " Assertion `"
+            << info.message << "' failed.\n";
 
   Abort();
 }
@@ -401,34 +388,14 @@ static void ReportFatalException(Environment* env,
 void PrintErrorString(const char* format, ...) {
   va_list ap;
   va_start(ap, format);
-#ifdef _WIN32
-  HANDLE stderr_handle = GetStdHandle(STD_ERROR_HANDLE);
-
-  // Check if stderr is something other than a tty/console
-  if (stderr_handle == INVALID_HANDLE_VALUE || stderr_handle == nullptr ||
-      uv_guess_handle(_fileno(stderr)) != UV_TTY) {
-    vfprintf(stderr, format, ap);
-    va_end(ap);
-    return;
-  }
 
   // Fill in any placeholders
   int n = _vscprintf(format, ap);
   std::vector<char> out(n + 1);
   vsprintf(out.data(), format, ap);
 
-  // Get required wide buffer size
-  n = MultiByteToWideChar(CP_UTF8, 0, out.data(), -1, nullptr, 0);
+  std::cerr << out.data();
 
-  std::vector<wchar_t> wbuf(n);
-  MultiByteToWideChar(CP_UTF8, 0, out.data(), -1, wbuf.data(), n);
-
-  // Don't include the null character in the output
-  CHECK_GT(n, 0);
-  WriteConsoleW(stderr_handle, wbuf.data(), n - 1, nullptr, nullptr);
-#else
-  vfprintf(stderr, format, ap);
-#endif
   va_end(ap);
 }
 
@@ -463,8 +430,9 @@ TryCatchScope::~TryCatchScope() {
     HandleScope scope(env_->isolate());
     Local<v8::Value> exception = Exception();
     Local<v8::Message> message = Message();
-    EnhanceFatalException enhance = CanContinue() ?
-        EnhanceFatalException::kEnhance : EnhanceFatalException::kDontEnhance;
+    EnhanceFatalException enhance = CanContinue()
+                                        ? EnhanceFatalException::kEnhance
+                                        : EnhanceFatalException::kDontEnhance;
     if (message.IsEmpty())
       message = Exception::CreateMessage(env_->isolate(), exception);
     ReportFatalException(env_, exception, message, enhance);
@@ -943,8 +911,8 @@ void TriggerUncaughtException(Isolate* isolate,
   Local<Object> process_object = env->process_object();
   Local<String> fatal_exception_string = env->fatal_exception_string();
   Local<Value> fatal_exception_function =
-      process_object->Get(env->context(),
-                          fatal_exception_string).ToLocalChecked();
+      process_object->Get(env->context(), fatal_exception_string)
+          .ToLocalChecked();
   // If the exception happens before process._fatalException is attached
   // during bootstrap, or if the user has patched it incorrectly, exit
   // the current Node.js instance.
@@ -965,8 +933,7 @@ void TriggerUncaughtException(Isolate* isolate,
     // trigger the per-isolate message listener which will call this
     // function and recurse.
     try_catch.SetVerbose(false);
-    Local<Value> argv[2] = { error,
-                             Boolean::New(env->isolate(), from_promise) };
+    Local<Value> argv[2] = {error, Boolean::New(env->isolate(), from_promise)};
 
     handled = fatal_exception_function.As<Function>()->Call(
         env->context(), process_object, arraysize(argv), argv);
