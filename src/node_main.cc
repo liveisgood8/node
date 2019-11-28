@@ -26,10 +26,6 @@
 #include "node.h"
 
 
-#define SHARED_LIB
-
-
-#ifdef SHARED_LIB
 extern "C" NODE_EXTERN int __stdcall MainStart(int argc, char* argv[]) {
   return node::Start(argc, argv);
 }
@@ -59,7 +55,7 @@ extern "C" NODE_EXTERN void __stdcall GetErrorStack(char *buffer, int size) {
 
   strcpy_s(buffer, size, errorString.c_str());
 }
-#else
+
 #ifdef _WIN32
 #include <VersionHelpers.h>
 #include <WinError.h>
@@ -154,5 +150,4 @@ int main(int argc, char* argv[]) {
   return node::Start(argc, argv);
 }
 #endif
-#endif  // SHARED_LIB
 
