@@ -1,0 +1,8 @@
+LIBRARY
+EXPORTS
+  MainStart=MainStart
+  Init=Init
+  Eval=Eval
+  TearDown=TearDown
+  RedirectStderrToMemory=RedirectStderrToMemory
+  GetErrorStack=GetErrorStack
