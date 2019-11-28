@@ -19,6 +19,9 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include "node.h"
 
 // ========== local headers ==========
@@ -91,7 +94,6 @@
 #if defined(NODE_HAVE_I18N_SUPPORT)
 #include <unicode/uvernum.h>
 #endif
-
 
 #if defined(LEAK_SANITIZER)
 #include <sanitizer/lsan_interface.h>
@@ -497,7 +499,6 @@ static struct {
 } stdio[1 + STDERR_FILENO];
 #endif  // __POSIX__
 
-
 inline void PlatformInit() {
 #ifdef __POSIX__
 #if HAVE_INSPECTOR
@@ -510,16 +511,12 @@ inline void PlatformInit() {
   // Make sure file descriptors 0-2 are valid before we start logging anything.
   for (auto& s : stdio) {
     const int fd = &s - stdio;
-    if (fstat(fd, &s.stat) == 0)
-      continue;
+    if (fstat(fd, &s.stat) == 0) continue;
     // Anything but EBADF means something is seriously wrong.  We don't
     // have to special-case EINTR, fstat() is not interruptible.
-    if (errno != EBADF)
-      ABORT();
-    if (fd != open("/dev/null", O_RDWR))
-      ABORT();
-    if (fstat(fd, &s.stat) != 0)
-      ABORT();
+    if (errno != EBADF) ABORT();
+    if (fd != open("/dev/null", O_RDWR)) ABORT();
+    if (fstat(fd, &s.stat) != 0) ABORT();
   }
 
 #if HAVE_INSPECTOR
@@ -536,8 +533,7 @@ inline void PlatformInit() {
   // it evaluates to 32, 34 or 64, depending on whether RT signals are enabled.
   // Counting up to SIGRTMIN doesn't work for the same reason.
   for (unsigned nr = 1; nr < kMaxSignal; nr += 1) {
-    if (nr == SIGKILL || nr == SIGSTOP)
-      continue;
+    if (nr == SIGKILL || nr == SIGSTOP) continue;
     act.sa_handler = (nr == SIGPIPE || nr == SIGXFSZ) ? SIG_IGN : SIG_DFL;
     CHECK_EQ(0, sigaction(nr, &act, nullptr));
   }
@@ -610,8 +606,7 @@ inline void PlatformInit() {
       // Ignore _close result. If it fails or not depends on used Windows
       // version. We will just check _open result.
       _close(fd);
-      if (fd != _open("nul", _O_RDWR))
-        ABORT();
+      if (fd != _open("nul", _O_RDWR)) ABORT();
     }
   }
 #endif  // _WIN32
@@ -676,7 +671,6 @@ void ResetStdio() {
 #endif  // __POSIX__
 }
 
-
 int ProcessGlobalArgs(std::vector<std::string>* args,
                       std::vector<std::string>* exec_args,
                       std::vector<std::string>* errors,
@@ -685,13 +679,12 @@ int ProcessGlobalArgs(std::vector<std::string>* args,
   std::vector<std::string> v8_args;
 
   Mutex::ScopedLock lock(per_process::cli_options_mutex);
-  options_parser::Parse(
-      args,
-      exec_args,
-      &v8_args,
-      per_process::cli_options.get(),
-      settings,
-      errors);
+  options_parser::Parse(args,
+                        exec_args,
+                        &v8_args,
+                        per_process::cli_options.get(),
+                        settings,
+                        errors);
 
   if (!errors->empty()) return 9;
 
@@ -705,9 +698,11 @@ int ProcessGlobalArgs(std::vector<std::string>* args,
   }
 
   auto env_opts = per_process::cli_options->per_isolate->per_env;
-  if (std::find(v8_args.begin(), v8_args.end(),
+  if (std::find(v8_args.begin(),
+                v8_args.end(),
                 "--abort-on-uncaught-exception") != v8_args.end() ||
-      std::find(v8_args.begin(), v8_args.end(),
+      std::find(v8_args.begin(),
+                v8_args.end(),
                 "--abort_on_uncaught_exception") != v8_args.end()) {
     env_opts->abort_on_uncaught_exception = true;
   }
@@ -816,8 +811,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
 
     bool is_in_string = false;
     bool will_start_new_arg = true;
-    for (std::string::size_type index = 0;
-         index < node_options.size();
+    for (std::string::size_type index = 0; index < node_options.size();
          ++index) {
       char c = node_options.at(index);
 
@@ -852,18 +846,14 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
       return 9;
     }
 
-    const int exit_code = ProcessGlobalArgs(&env_argv,
-                                            nullptr,
-                                            errors,
-                                            kAllowedInEnvironment);
+    const int exit_code =
+        ProcessGlobalArgs(&env_argv, nullptr, errors, kAllowedInEnvironment);
     if (exit_code != 0) return exit_code;
   }
 #endif
 
-  const int exit_code = ProcessGlobalArgs(argv,
-                                          exec_argv,
-                                          errors,
-                                          kDisallowedInEnvironment);
+  const int exit_code =
+      ProcessGlobalArgs(argv, exec_argv, errors, kDisallowedInEnvironment);
   if (exit_code != 0) return exit_code;
 
   // Set the process.title immediately after processing argv if --title is set.
@@ -1023,7 +1013,26 @@ void TearDownOncePerProcess() {
   per_process::v8_platform.Dispose();
 }
 
+void CreateLogDirecroryIfNotExist() {
+  constexpr const char* log_dir_path = "Log\\";
+
+  struct stat info{};
+
+  if (stat(log_dir_path, &info) != 0 || !(info.st_mode & S_IFDIR))
+  {
+    constexpr int nMode = 0777;  // UNIX style permissions
+    int nError = 0;
+#if defined(_WIN32)
+    nError = _mkdir(log_dir_path); 
+#else
+    nError = mkdir(log_dir_path, nMode);
+#endif
+  }
+}
+
 int Start(int argc, char** argv) {
+  CreateLogDirecroryIfNotExist();
+
   InitializationResult result = InitializeOncePerProcess(argc, argv);
   if (result.early_return) {
     return result.exit_code;
@@ -1065,7 +1074,6 @@ int Stop(Environment* env) {
   env->ExitEnv();
   return 0;
 }
-
 
 NODE_EXTERN int EvalScript(const char* script) {
   Isolate::CreateParams params;
