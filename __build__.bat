@@ -1,1 +1,0 @@
-.\vcbuild.bat static without-intl nossl nonpm x86

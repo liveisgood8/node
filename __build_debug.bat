@@ -1,0 +1,1 @@
+.\vcbuild.bat static x86
