@@ -1074,7 +1074,7 @@ int Stop(Environment* env) {
   return 0;
 }
 
-NODE_EXTERN int EvalScript(const char* script, const char* inputArgsJson) {
+NODE_EXTERN int EvalScript(const char* script, const char* inputArgsJson, bool isDebug) {
   Isolate::CreateParams params;
   const std::vector<size_t>* indexes = nullptr;
   std::vector<intptr_t> external_references;
@@ -1108,6 +1108,7 @@ NODE_EXTERN int EvalScript(const char* script, const char* inputArgsJson) {
   if (inputArgsJson) {
     main_instance.SetInputArgsJson(inputArgsJson);
   }
+  main_instance.SetInspectorState(isDebug);
 
   auto result = main_instance.Run();
 

@@ -220,7 +220,7 @@ NODE_EXTERN int Stop(Environment* env);
 
 // Support multithread eval
 // Firstly must call InitFully(int argc, char* argv[])
-NODE_EXTERN int EvalScript(const char* script, const char *inputArgsJson); 
+NODE_EXTERN int EvalScript(const char* script, const char *inputArgsJson, bool isDebug); 
 
 // After all script done, call TearDown()
 NODE_EXTERN int InitFully(int argc, char* argv[]);

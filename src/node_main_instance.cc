@@ -115,6 +115,10 @@ void NodeMainInstance::SetInputArgsJson(const std::string& inputArgsJson) {
   this->inputArgsJson = inputArgsJson;
 }
 
+void NodeMainInstance::SetInspectorState(bool state) {
+  isInspectorEnabled = state;
+}
+
 int NodeMainInstance::Run() {
   Locker locker(isolate_);
   Isolate::Scope isolate_scope(isolate_);
@@ -245,6 +249,12 @@ std::unique_ptr<Environment> NodeMainInstance::CreateMainEnvironment(
   // Set force input args
   if (!inputArgsJson.empty()) {
     env->options()->input_args_json = inputArgsJson;
+  }
+
+  // Set inspector
+  if (isInspectorEnabled) {
+    env->options()->get_debug_options()->EnableBreakFirstLine();
+    env->options()->get_debug_options()->break_node_first_line = true;
   }
 
   // TODO(joyeecheung): when we snapshot the bootstrapped context,

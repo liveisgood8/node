@@ -34,8 +34,8 @@ extern "C" NODE_EXTERN int __stdcall Init(int argc, char* argv[]) {
   return node::InitFully(argc, argv);
 }
 
-extern "C" NODE_EXTERN int __stdcall Eval(const char* script, const char* inputArgsJson) {
-  return node::EvalScript(script, inputArgsJson);
+extern "C" NODE_EXTERN int __stdcall Eval(const char* script, const char* inputArgsJson, bool isDebug) {
+  return node::EvalScript(script, inputArgsJson, isDebug);
 }
 
 extern "C" NODE_EXTERN void __stdcall TearDown() {
@@ -92,7 +92,16 @@ int wmain(int argc, wchar_t* wargv[]) {
   }
   argv[argc] = nullptr;
   // Now that conversion is done, we can finally start.
-  return node::Start(argc, argv);
+  auto res = node::Start(argc, argv);
+
+  return res;
+ /* Init(argc, argv);
+
+   Eval("console.log('test')", nullptr, true);
+
+   TearDown();
+
+   return 0;*/
 }
 #else
 // UNIX

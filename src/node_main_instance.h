@@ -56,6 +56,7 @@ class NodeMainInstance {
 
   void SetScript(const std::string& script);
   void SetInputArgsJson(const std::string& inputArgsJson);
+  void SetInspectorState(bool state);
 
   // Start running the Node.js instances, return the exit code when finished.
   int Run();
@@ -95,6 +96,7 @@ class NodeMainInstance {
 
   std::string script;
   std::string inputArgsJson;
+  bool isInspectorEnabled = false;
 };
 
 }  // namespace node
