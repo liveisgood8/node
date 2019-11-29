@@ -1108,11 +1108,13 @@ NODE_EXTERN int EvalScript(const char* script, const char* inputArgsJson, bool i
   if (inputArgsJson) {
     main_instance.SetInputArgsJson(inputArgsJson);
   }
+#if HAVE_INSPECTOR
   main_instance.SetInspectorState(isDebug);
+#endif  // HAVE_INSPECTOR
 
   auto result = main_instance.Run();
 
-  uv_loop_close(uv_loop);
+  uv_loop_delete(uv_loop);
 
   return result;
 }

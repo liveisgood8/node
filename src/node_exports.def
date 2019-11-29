@@ -6,3 +6,4 @@ EXPORTS
   TearDown=TearDown
   RedirectStderrToMemory=RedirectStderrToMemory
   GetErrorStack=GetErrorStack
+  IsInspectorSupported=IsInspectorSupported
