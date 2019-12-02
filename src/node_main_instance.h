@@ -91,6 +91,7 @@ class NodeMainInstance {
   v8::Isolate* isolate_;
   MultiIsolatePlatform* platform_;
   std::unique_ptr<IsolateData> isolate_data_;
+  uv_loop_t* loop;
   bool owns_isolate_ = false;
   bool deserialize_mode_ = false;
 

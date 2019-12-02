@@ -63,7 +63,8 @@ NodeMainInstance::NodeMainInstance(
       isolate_(nullptr),
       platform_(platform),
       isolate_data_(nullptr),
-      owns_isolate_(true) {
+      owns_isolate_(true),
+      loop(event_loop) {
   params->array_buffer_allocator = array_buffer_allocator_.get();
   isolate_ = Isolate::Allocate();
   CHECK_NOT_NULL(isolate_);
@@ -103,8 +104,21 @@ NodeMainInstance::~NodeMainInstance() {
   if (!owns_isolate_) {
     return;
   }
+
+  bool platform_finished = false;
+
+  platform_->AddIsolateFinishedCallback(
+      isolate_,
+      [](void* data) { *static_cast<bool*>(data) = true; },
+      &platform_finished);
+
   isolate_->Dispose();
   platform_->UnregisterIsolate(isolate_);
+
+  DCHECK(loop);
+  while (!platform_finished) {
+    uv_run(loop, UV_RUN_ONCE);
+  }
 }
 
 void NodeMainInstance::SetScript(const std::string& script) {
@@ -125,57 +139,57 @@ int NodeMainInstance::Run() {
   HandleScope handle_scope(isolate_);
 
   int exit_code = 0;
-  std::unique_ptr<Environment> env = CreateMainEnvironment(&exit_code);
+  auto env_ = CreateMainEnvironment(&exit_code);
 
-  CHECK_NOT_NULL(env);
-  Context::Scope context_scope(env->context());
+  CHECK_NOT_NULL(env_);
+  Context::Scope context_scope(env_->context());
 
   if (exit_code == 0) {
     {
       InternalCallbackScope callback_scope(
-          env.get(),
+          env_.get(),
           Local<Object>(),
           { 1, 0 },
           InternalCallbackScope::kAllowEmptyResource |
               InternalCallbackScope::kSkipAsyncHooks);
-      LoadEnvironment(env.get());
+      LoadEnvironment(env_.get());
     }
 
-    env->set_trace_sync_io(env->options()->trace_sync_io);
+    env_->set_trace_sync_io(env_->options()->trace_sync_io);
 
     {
       SealHandleScope seal(isolate_);
       bool more;
-      env->performance_state()->Mark(
+      env_->performance_state()->Mark(
           node::performance::NODE_PERFORMANCE_MILESTONE_LOOP_START);
       do {
-        uv_run(env->event_loop(), UV_RUN_DEFAULT);
+        uv_run(env_->event_loop(), UV_RUN_DEFAULT);
 
         per_process::v8_platform.DrainVMTasks(isolate_);
 
-        more = uv_loop_alive(env->event_loop());
-        if (more && !env->is_stopping()) continue;
+        more = uv_loop_alive(env_->event_loop());
+        if (more && !env_->is_stopping()) continue;
 
-        if (!uv_loop_alive(env->event_loop())) {
-          EmitBeforeExit(env.get());
+        if (!uv_loop_alive(env_->event_loop())) {
+          EmitBeforeExit(env_.get());
         }
 
         // Emit `beforeExit` if the loop became alive either after emitting
         // event, or after running some callbacks.
-        more = uv_loop_alive(env->event_loop());
-      } while (more == true && !env->is_stopping());
-      env->performance_state()->Mark(
+        more = uv_loop_alive(env_->event_loop());
+      } while (more == true && !env_->is_stopping());
+      env_->performance_state()->Mark(
           node::performance::NODE_PERFORMANCE_MILESTONE_LOOP_EXIT);
     }
 
-    env->set_trace_sync_io(false);
-    exit_code = EmitExit(env.get());
+    env_->set_trace_sync_io(false);
+    exit_code = EmitExit(env_.get());
   }
 
-  env->set_can_call_into_js(false);
-  env->stop_sub_worker_contexts();
+  env_->set_can_call_into_js(false);
+  env_->stop_sub_worker_contexts();
   ResetStdio();
-  env->RunCleanup();
+  env_->RunCleanup();
 
   // TODO(addaleax): Neither NODE_SHARED_MODE nor HAVE_INSPECTOR really
   // make sense here.
@@ -190,7 +204,7 @@ int NodeMainInstance::Run() {
   }
 #endif
 
-  RunAtExit(env.get());
+  RunAtExit(env_.get());
 
   per_process::v8_platform.DrainVMTasks(isolate_);
 
@@ -200,6 +214,7 @@ int NodeMainInstance::Run() {
 
   return exit_code;
 }
+
 
 // TODO(joyeecheung): align this with the CreateEnvironment exposed in node.h
 // and the environment creation routine in workers somehow.
@@ -229,48 +244,48 @@ std::unique_ptr<Environment> NodeMainInstance::CreateMainEnvironment(
   CHECK(!context.IsEmpty());
   Context::Scope context_scope(context);
 
-  std::unique_ptr<Environment> env = std::make_unique<Environment>(
+  auto env_ = std::unique_ptr<Environment>(new Environment(
       isolate_data_.get(),
       context,
       args_,
       exec_args_,
       static_cast<Environment::Flags>(Environment::kIsMainThread |
                                       Environment::kOwnsProcessState |
-                                      Environment::kOwnsInspector));
-  env->InitializeLibuv(per_process::v8_is_profiling);
-  env->InitializeDiagnostics();
+                                      Environment::kOwnsInspector)));
+  env_->InitializeLibuv(per_process::v8_is_profiling);
+  env_->InitializeDiagnostics();
 
   // Set force eval script
   if (!script.empty()) {
-    env->options()->has_eval_string = true;
-    env->options()->eval_string = script;
+    env_->options()->has_eval_string = true;
+    env_->options()->eval_string = script;
   }
 
   // Set force input args
   if (!inputArgsJson.empty()) {
-    env->options()->input_args_json = inputArgsJson;
+    env_->options()->input_args_json = inputArgsJson;
   }
 
   // Set inspector
   if (isInspectorEnabled) {
-    env->options()->get_debug_options()->EnableBreakFirstLine();
-    env->options()->get_debug_options()->break_node_first_line = true;
+    env_->options()->get_debug_options()->EnableBreakFirstLine();
+    env_->options()->get_debug_options()->break_node_first_line = true;
   }
 
   // TODO(joyeecheung): when we snapshot the bootstrapped context,
   // the inspector and diagnostics setup should after after deserialization.
 #if HAVE_INSPECTOR
-  *exit_code = env->InitializeInspector({});
+  *exit_code = env_->InitializeInspector({});
 #endif
   if (*exit_code != 0) {
-    return env;
+    return env_;
   }
 
-  if (env->RunBootstrapping().IsEmpty()) {
+  if (env_->RunBootstrapping().IsEmpty()) {
     *exit_code = 1;
   }
 
-  return env;
+  return env_;
 }
 
 }  // namespace node

@@ -1093,28 +1093,27 @@ NODE_EXTERN int EvalScript(const char* script, const char* inputArgsJson, bool i
     }
   }
 
-  auto uv_loop = uv_loop_new();
+  auto loop = std::unique_ptr<uv_loop_t>(new uv_loop_t());
+  uv_loop_init(loop.get());
 
-  NodeMainInstance main_instance(&params,
-                                 uv_loop,
-                                 per_process::v8_platform.Platform(),
-                                 {},
-                                 {},
-                                 indexes);
+  auto main_instance = std::unique_ptr<NodeMainInstance>(
+    new NodeMainInstance(&params, loop.get(), per_process::v8_platform.Platform(), {}, {}, indexes));
 
   if (script) {
-    main_instance.SetScript(script);
+    main_instance->SetScript(script);
   }
   if (inputArgsJson) {
-    main_instance.SetInputArgsJson(inputArgsJson);
+    main_instance->SetInputArgsJson(inputArgsJson);
   }
 #if HAVE_INSPECTOR
   main_instance.SetInspectorState(isDebug);
 #endif  // HAVE_INSPECTOR
 
-  auto result = main_instance.Run();
+  auto result = main_instance->Run();
+  main_instance.reset();
 
-  uv_loop_delete(uv_loop);
+  int close_result = uv_loop_close(loop.get());
+  assert(close_result == 0);
 
   return result;
 }
