@@ -147,7 +147,7 @@ class Win32SymbolDebuggingContext final : public NativeSymbolDebuggingContext {
       // SymFromAddr failed
       const DWORD error = GetLastError();  // "eat" the error anyway
 #ifdef DEBUG
-      fprintf(stderr, "SymFromAddr returned error : %lu\n", error);
+      std::cerr << "SymFromAddr returned error : " << error << "\n";
 #endif
     }
     // End MSDN code
@@ -182,7 +182,7 @@ class Win32SymbolDebuggingContext final : public NativeSymbolDebuggingContext {
       // SymGetLineFromAddr64 failed
       const DWORD error = GetLastError();  // "eat" the error anyway
 #ifdef DEBUG
-      fprintf(stderr, "SymGetLineFromAddr64 returned error : %lu\n", error);
+      std::cerr << "SymGetLineFromAddr64 returned error : " << error << "\n";
 #endif
     }
     // End MSDN code
@@ -205,7 +205,7 @@ class Win32SymbolDebuggingContext final : public NativeSymbolDebuggingContext {
       // UnDecorateSymbolName failed
       const DWORD error = GetLastError();  // "eat" the error anyway
 #ifdef DEBUG
-      fprintf(stderr, "UnDecorateSymbolName returned error %lu\n", error);
+      std::cerr << "UnDecorateSymbolName returned error " << error << "\n";
 #endif
     }
     return nullptr;

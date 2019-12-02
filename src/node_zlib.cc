@@ -556,12 +556,12 @@ class ZlibStream : public CompressionStream<ZlibContext> {
     // Refs: https://github.com/nodejs/node/issues/16649
     // Refs: https://github.com/nodejs/node/issues/14161
     if (args.Length() == 5) {
-      fprintf(stderr,
+      std::cerr <<
           "WARNING: You are likely using a version of node-tar or npm that "
           "is incompatible with this version of Node.js.\nPlease use "
           "either the version of npm that is bundled with Node.js, or "
           "a version of npm (> 5.5.1 or < 5.4.0) or node-tar (> 4.0.1) "
-          "that is compatible with Node.js 9 and above.\n");
+          "that is compatible with Node.js 9 and above.\n";
     }
     CHECK(args.Length() == 7 &&
       "init(windowBits, level, memLevel, strategy, writeResult, writeCallback,"

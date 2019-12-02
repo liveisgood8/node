@@ -4,6 +4,8 @@
 
 #include <fcntl.h>
 #include <cstring>
+#include <iostream>
+
 
 namespace node {
 namespace tracing {
@@ -89,9 +91,8 @@ void NodeTraceWriter::OpenNewFileForStreaming() {
       O_CREAT | O_WRONLY | O_TRUNC, 0644, nullptr);
   uv_fs_req_cleanup(&req);
   if (fd_ < 0) {
-    fprintf(stderr, "Could not open trace file %s: %s\n",
-                    filepath.c_str(),
-                    uv_strerror(fd_));
+    std::cerr << "Could not open trace file " << filepath.c_str() << ": "
+              << uv_strerror(fd_) << "\n";
     fd_ = -1;
   }
 }

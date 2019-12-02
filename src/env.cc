@@ -21,6 +21,7 @@
 #include <atomic>
 #include <cstdio>
 #include <memory>
+#include <iostream>
 
 namespace node {
 
@@ -90,7 +91,7 @@ void IsolateData::DeserializeProperties(const std::vector<size_t>* indexes) {
     MaybeLocal<TypeName> field =                                               \
         isolate_->GetDataFromSnapshotOnce<TypeName>((*indexes)[i++]);          \
     if (field.IsEmpty()) {                                                     \
-      fprintf(stderr, "Failed to deserialize " #PropertyName "\n");            \
+      std::cerr << "Failed to deserialize " #PropertyName "\n";                \
     }                                                                          \
     PropertyName##_.Set(isolate_, field.ToLocalChecked());                     \
   } while (0);

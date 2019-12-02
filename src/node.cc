@@ -906,11 +906,11 @@ NODE_EXTERN void Init(int* argc,
   int exit_code = InitializeNodeWithArgs(&argv_, &exec_argv_, &errors);
 
   for (const std::string& error : errors)
-    fprintf(stderr, "%s: %s\n", argv_.at(0).c_str(), error.c_str());
+    std::cerr << argv_.at(0).c_str() << ": " << error.c_str() << "\n";
   if (exit_code != 0) exit(exit_code);
 
   if (per_process::cli_options->print_version) {
-    printf("%s\n", NODE_VERSION);
+    std::cout << NODE_VERSION << "\n";
     exit(0);
   }
 
@@ -940,7 +940,7 @@ InitializationResult InitializeOncePerProcess(int argc, char** argv) {
 #ifdef NODE_ENABLE_LARGE_CODE_PAGES
   if (node::IsLargePagesEnabled()) {
     if (node::MapStaticCodeToLargePages() != 0) {
-      fprintf(stderr, "Reverting to default page size\n");
+      std::cerr << "Reverting to default page size\n";
     }
   }
 #endif
@@ -957,7 +957,7 @@ InitializationResult InitializeOncePerProcess(int argc, char** argv) {
     result.exit_code =
         InitializeNodeWithArgs(&(result.args), &(result.exec_args), &errors);
     for (const std::string& error : errors)
-      fprintf(stderr, "%s: %s\n", result.args.at(0).c_str(), error.c_str());
+      std::cerr << result.args.at(0).c_str() << ": " << error.c_str() << "\n";
     if (result.exit_code != 0) {
       result.early_return = true;
       return result;
@@ -965,7 +965,7 @@ InitializationResult InitializeOncePerProcess(int argc, char** argv) {
   }
 
   if (per_process::cli_options->print_version) {
-    printf("%s\n", NODE_VERSION);
+    std::cout << NODE_VERSION << "\n";
     result.exit_code = 0;
     result.early_return = true;
     return result;

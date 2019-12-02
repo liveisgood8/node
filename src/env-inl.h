@@ -37,6 +37,7 @@
 #include <cstdint>
 
 #include <utility>
+#include <iostream>
 
 namespace node {
 
@@ -156,17 +157,15 @@ inline bool AsyncHooks::pop_async_id(double async_id) {
   // Since async_hooks is experimental, do only perform the check
   // when async_hooks is enabled.
   if (fields_[kCheck] > 0 && async_id_fields_[kExecutionAsyncId] != async_id) {
-    fprintf(stderr,
-            "Error: async hook stack has become corrupted ("
-            "actual: %.f, expected: %.f)\n",
-            async_id_fields_.GetValue(kExecutionAsyncId),
-            async_id);
+    std::cerr << "Error: async hook stack has become corrupted ("
+              << "actual: " << async_id_fields_.GetValue(kExecutionAsyncId)
+              << ", expected: " << async_id << ")\n";
     DumpBacktrace(stderr);
-    fflush(stderr);
+    std::cerr.flush();
     if (!env()->abort_on_uncaught_exception())
       exit(1);
-    fprintf(stderr, "\n");
-    fflush(stderr);
+    std::cerr << "\n";
+    std::cerr.flush();
     ABORT_NO_BACKTRACE();
   }
 

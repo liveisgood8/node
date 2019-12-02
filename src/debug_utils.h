@@ -38,6 +38,7 @@ inline void FORCE_INLINE Debug(Environment* env,
   if (!UNLIKELY(env->debug_enabled(cat)))
     return;
   fprintf(stderr, "%s", message);
+  std::cerr << message;
 }
 
 template <typename... Args>

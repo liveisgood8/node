@@ -7,6 +7,7 @@
 #include "v8.h"
 
 #include <atomic>
+#include <iostream>
 
 namespace node {
 
@@ -75,16 +76,20 @@ void PromiseRejectCallback(PromiseRejectMessage message) {
     value = message.GetValue();
     unhandledRejections++;
     TRACE_COUNTER2(TRACING_CATEGORY_NODE2(promises, rejections),
-                  "rejections",
-                  "unhandled", unhandledRejections,
-                  "handledAfter", rejectionsHandledAfter);
+                   "rejections",
+                   "unhandled",
+                   unhandledRejections,
+                   "handledAfter",
+                   rejectionsHandledAfter);
   } else if (event == kPromiseHandlerAddedAfterReject) {
     value = Undefined(isolate);
     rejectionsHandledAfter++;
     TRACE_COUNTER2(TRACING_CATEGORY_NODE2(promises, rejections),
-                  "rejections",
-                  "unhandled", unhandledRejections,
-                  "handledAfter", rejectionsHandledAfter);
+                   "rejections",
+                   "unhandled",
+                   unhandledRejections,
+                   "handledAfter",
+                   rejectionsHandledAfter);
   } else if (event == kPromiseResolveAfterResolved) {
     value = message.GetValue();
   } else if (event == kPromiseRejectAfterResolved) {
@@ -97,7 +102,7 @@ void PromiseRejectCallback(PromiseRejectMessage message) {
     value = Undefined(isolate);
   }
 
-  Local<Value> args[] = { type, promise, value };
+  Local<Value> args[] = {type, promise, value};
 
   // V8 does not expect this callback to have a scheduled exceptions once it
   // returns, so we print them out in a best effort to do something about it
@@ -106,13 +111,12 @@ void PromiseRejectCallback(PromiseRejectMessage message) {
   USE(callback->Call(
       env->context(), Undefined(isolate), arraysize(args), args));
   if (try_catch.HasCaught() && !try_catch.HasTerminated()) {
-    fprintf(stderr, "Exception in PromiseRejectCallback:\n");
+    std::cerr << "Exception in PromiseRejectCallback:\n";
     PrintCaughtException(isolate, env->context(), try_catch);
   }
 }
 
-static void SetPromiseRejectCallback(
-    const FunctionCallbackInfo<Value>& args) {
+static void SetPromiseRejectCallback(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args);
 
   CHECK(args[0]->IsFunction());
@@ -129,9 +133,11 @@ static void Initialize(Local<Object> target,
   env->SetMethod(target, "enqueueMicrotask", EnqueueMicrotask);
   env->SetMethod(target, "setTickCallback", SetTickCallback);
   env->SetMethod(target, "runMicrotasks", RunMicrotasks);
-  target->Set(env->context(),
-              FIXED_ONE_BYTE_STRING(isolate, "tickInfo"),
-              env->tick_info()->fields().GetJSArray()).Check();
+  target
+      ->Set(env->context(),
+            FIXED_ONE_BYTE_STRING(isolate, "tickInfo"),
+            env->tick_info()->fields().GetJSArray())
+      .Check();
 
   Local<Object> events = Object::New(isolate);
   NODE_DEFINE_CONSTANT(events, kPromiseRejectWithNoHandler);
@@ -139,12 +145,12 @@ static void Initialize(Local<Object> target,
   NODE_DEFINE_CONSTANT(events, kPromiseResolveAfterResolved);
   NODE_DEFINE_CONSTANT(events, kPromiseRejectAfterResolved);
 
-  target->Set(env->context(),
-              FIXED_ONE_BYTE_STRING(isolate, "promiseRejectEvents"),
-              events).Check();
-  env->SetMethod(target,
-                 "setPromiseRejectCallback",
-                 SetPromiseRejectCallback);
+  target
+      ->Set(env->context(),
+            FIXED_ONE_BYTE_STRING(isolate, "promiseRejectEvents"),
+            events)
+      .Check();
+  env->SetMethod(target, "setPromiseRejectCallback", SetPromiseRejectCallback);
 }
 
 }  // namespace task_queue
