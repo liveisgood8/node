@@ -329,8 +329,7 @@
           'MapExports': 'true', # /MAPINFO:EXPORTS
           'RandomizedBaseAddress': 2, # enable ASLR
           'DataExecutionPrevention': 2, # enable DEP
-          'AllowIsolation': 'true',
-		  'ModuleDefinitionFile': 'src\\node_exports.def'
+          'AllowIsolation': 'true'
         },
       },
 

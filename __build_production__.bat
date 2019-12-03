@@ -1,1 +1,1 @@
-.\vcbuild.bat static without-intl nossl nonpm noetw x86
+.\vcbuild.bat static without-intl nonpm noetw x86
