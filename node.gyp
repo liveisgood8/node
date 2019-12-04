@@ -546,7 +546,7 @@
         'src/node_native_module_env.cc',
         'src/node_options.cc',
         'src/node_os.cc',
-		'src/node_message.cc',
+		    'src/node_message.cc',
         'src/node_perf.cc',
         'src/node_platform.cc',
         'src/node_postmortem_metadata.cc',
@@ -585,6 +585,8 @@
         'src/udp_wrap.cc',
         'src/util.cc',
         'src/uv.cc',
+
+        'deps/easylogging/easylogging++.cc',
         # headers to make for a more pleasant IDE experience
         'src/aliased_buffer.h',
         'src/async_wrap.h',
@@ -666,6 +668,7 @@
         'src/util-inl.h',
         # Dependency headers
         'deps/v8/include/v8.h',
+        'deps/easylogging/easylogging++.h',
         # javascript files to make for an even more pleasant IDE experience
         '<@(library_files)',
         # node.gyp is added by default, common.gypi is added for change detection
