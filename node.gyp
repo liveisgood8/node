@@ -53,6 +53,7 @@
       'lib/_http_server.js',
       'lib/https.js',
       'lib/inspector.js',
+      'lib/logger.js',
       'lib/module.js',
       'lib/net.js',
       'lib/os.js',
@@ -547,6 +548,7 @@
         'src/node_options.cc',
         'src/node_os.cc',
 		    'src/node_message.cc',
+		    'src/node_logger.cc',
         'src/node_perf.cc',
         'src/node_platform.cc',
         'src/node_postmortem_metadata.cc',
@@ -680,6 +682,7 @@
       },
 
       'defines': [
+        'ELPP_NO_DEFAULT_LOG_FILE',
         'NODE_ARCH="<(target_arch)"',
         'NODE_PLATFORM="<(OS)"',
         'NODE_WANT_INTERNALS=1',

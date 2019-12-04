@@ -87,6 +87,7 @@
   V(v8)                                                                        \
   V(worker)                                                                    \
   V(message)                                                                   \
+  V(logger)                                                                    \
   V(zlib)
 
 #define NODE_BUILTIN_MODULES(V)                                                \
