@@ -426,11 +426,11 @@ Environment::~Environment() {
   // them; with Worker threads, we have the opportunity to be stricter.
   // Also, since the main thread usually stops just before the process exits,
   // this is far less relevant here.
-  if (!is_main_thread()) {
-    // Dereference all addons that were loaded into this environment.
-    for (binding::DLib& addon : loaded_addons_) {
-      addon.Close();
-    }
+
+  // Dereference all addons that were loaded into this environment.
+  // NEXUS. Unloading also run in main thread
+  for (binding::DLib& addon : loaded_addons_) {
+    addon.Close();
   }
 
   CHECK_EQ(base_object_count(), 0);
