@@ -1003,6 +1003,7 @@ InitializationResult InitializeOncePerProcess(int argc, char** argv) {
 void TearDownOncePerProcess() {
   per_process::v8_initialized = false;
   V8::Dispose();
+  V8::ShutdownPlatform();
 
   // uv_run cannot be called from the time before the beforeExit callback
   // runs until the program exits unless the event loop has any referenced
@@ -1011,6 +1012,8 @@ void TearDownOncePerProcess() {
   // Since uv_run cannot be called, uv_async handles held by the platform
   // will never be fully cleaned up.
   per_process::v8_platform.Dispose();
+
+  init_called.exchange(false);
 }
 
 void CreateLogDirecroryIfNotExist() {
