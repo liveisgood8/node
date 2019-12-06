@@ -99,7 +99,10 @@ const bool has_code_cache = true;
   ss << R"(void NativeModuleEnv::InitializeCodeCache() {
   NativeModuleCacheMap& code_cache =
       *NativeModuleLoader::GetInstance()->code_cache();
-  CHECK(code_cache.empty());
+  if (!code_cache.empty())
+  {
+    return;
+  }
   auto policy = v8::ScriptCompiler::CachedData::BufferPolicy::BufferNotOwned;
 )";
 
