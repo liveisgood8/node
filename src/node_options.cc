@@ -486,6 +486,7 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
   AddOption("[has_eval_string]", "", &EnvironmentOptions::has_eval_string);
   AddOption("--eval", "evaluate script", &EnvironmentOptions::eval_string);
   AddOption("--input-args", "set input aruments for script", &EnvironmentOptions::input_args_json);
+  AddOption("--lis-user-id", "set lis user id", &EnvironmentOptions::input_args_json);
   Implies("--eval", "[has_eval_string]");
   AddOption("--print",
             "evaluate script and print result",
