@@ -24,14 +24,16 @@
 #include <sstream>
 
 #include "node.h"
+#include "easylogging++.h"
+
 
 constexpr int kExceptionExitCode = 500;
 
 extern "C" NODE_EXTERN int __stdcall MainStart(int argc, char* argv[]) {
   try {
     return node::Start(argc, argv);
-  }
-  catch (const std::exception &) {
+  } catch (const std::exception &err) {
+    LOG(ERROR) << err.what();
     return kExceptionExitCode;
   }
 }
@@ -40,10 +42,13 @@ extern "C" NODE_EXTERN int __stdcall Init(int argc, char* argv[]) {
   return node::InitFully(argc, argv);
 }
 
-extern "C" NODE_EXTERN int __stdcall Eval(const char* script, const char* inputArgsJson, bool isDebug) {
+extern "C" NODE_EXTERN int __stdcall Eval(const char* script,
+                                          const char* inputArgsJson,
+                                          bool isDebug) {
   try {
     return node::EvalScript(script, inputArgsJson, isDebug);
-  } catch (const std::exception&) {
+  } catch (const std::exception &err) {
+    LOG(ERROR) << err.what();
     return kExceptionExitCode;
   }
 }
@@ -55,7 +60,7 @@ extern "C" NODE_EXTERN void __stdcall TearDown() {
 extern "C" NODE_EXTERN bool __stdcall IsInspectorSupported() {
 #if HAVE_INSPECTOR
   return true;
-#endif // HAVE_INSPECTOR
+#endif  // HAVE_INSPECTOR
   return false;
 }
 
@@ -66,7 +71,7 @@ extern "C" NODE_EXTERN void __stdcall RedirectStderrToMemory() {
   oldErrorStream = std::cerr.rdbuf(errorStreamBuffer.rdbuf());
 }
 
-extern "C" NODE_EXTERN void __stdcall GetErrorStack(char *buffer, int size) {
+extern "C" NODE_EXTERN void __stdcall GetErrorStack(char* buffer, int size) {
   const auto errorString = errorStreamBuffer.str();
   errorStreamBuffer.str(std::string());
 
@@ -112,13 +117,13 @@ int wmain(int argc, wchar_t* wargv[]) {
   auto res = node::Start(argc, argv);
 
   return res;
- /* Init(argc, argv);
+  /* Init(argc, argv);
 
-   Eval("console.log('test')", nullptr, true);
+    Eval("console.log('test')", nullptr, true);
 
-   TearDown();
+    TearDown();
 
-   return 0;*/
+    return 0;*/
 }
 #else
 // UNIX
@@ -176,4 +181,3 @@ int main(int argc, char* argv[]) {
   return node::Start(argc, argv);
 }
 #endif
-
