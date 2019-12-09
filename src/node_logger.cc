@@ -21,26 +21,23 @@
 
 #include "env-inl.h"
 
-#include <../deps/easylogging/easylogging++.h>
+#include "easylogging++.h"
 
-
-INITIALIZE_EASYLOGGINGPP
 
 namespace node {
 namespace logger {
 
 using v8::Context;
+using v8::Function;
 using v8::FunctionCallbackInfo;
 using v8::Isolate;
+using v8::JSON;
 using v8::Local;
 using v8::Object;
 using v8::String;
 using v8::Value;
-using v8::Function;
-using v8::JSON;
 
 static bool isLoggerInitialized = false;
-
 
 std::string Stringify(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args);
@@ -61,8 +58,7 @@ std::string Stringify(const FunctionCallbackInfo<Value>& args) {
 
       String::Utf8Value jsStringValue(env->isolate(), jsString);
       message += *jsStringValue;
-    }
-    else {
+    } else {
       String::Utf8Value jsStringValue(env->isolate(), args[i]);
       message += *jsStringValue;
     }
@@ -91,33 +87,11 @@ static void Error(const FunctionCallbackInfo<Value>& args) {
   LOG(ERROR) << Stringify(args);
 }
 
-void InitializeLogger() {
-#ifdef WIN32
-  constexpr const char* kLogFileName = "Log\\lisnode.log";
-#else
-  constexpr const char* kLogFileName = "Log/lisnode.log";
-#endif  // WIN32
-
-  if (!isLoggerInitialized) {
-    el::Loggers::reconfigureAllLoggers(el::ConfigurationType::Filename,
-                                       kLogFileName);
-    el::Loggers::reconfigureAllLoggers(
-        el::Level::Error,
-        el::ConfigurationType::Format,
-        "%datetime %level [%logger]: %func %msg");
-
-    isLoggerInitialized = true;
-  }
-
-}
-
 void Initialize(Local<Object> target,
                 Local<Value> unused,
                 Local<Context> context,
                 void* priv) {
   Environment* env = Environment::GetCurrent(context);
-
-  InitializeLogger();
 
   env->SetMethod(target, "trace", Trace);
   env->SetMethod(target, "debug", Debug);

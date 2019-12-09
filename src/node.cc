@@ -26,6 +26,7 @@
 
 // ========== local headers ==========
 
+#include "easylogging++.h"
 #include "debug_utils.h"
 #include "env-inl.h"
 #include "memory_tracker-inl.h"
@@ -121,6 +122,9 @@
 
 #include <string>
 #include <vector>
+
+
+INITIALIZE_EASYLOGGINGPP
 
 namespace node {
 
@@ -616,6 +620,38 @@ NODE_EXTERN void TearDown() {
   TearDownOncePerProcess();
 }
 
+void CreateLogDirecroryIfNotExist() {
+  constexpr const char* log_dir_path = "Log\\";
+
+  struct stat info {};
+
+  if (stat(log_dir_path, &info) != 0 || !(info.st_mode & S_IFDIR)) {
+    constexpr int nMode = 0777;  // UNIX style permissions
+    int nError = 0;
+#if defined(_WIN32)
+    nError = _mkdir(log_dir_path);
+#else
+    nError = mkdir(log_dir_path, nMode);
+#endif
+  }
+}
+
+NODE_EXTERN void InitializeLogger() {
+  CreateLogDirecroryIfNotExist();
+
+#ifdef WIN32
+  constexpr const char* kLogFileName = "Log\\lisnode.log";
+#else
+  constexpr const char* kLogFileName = "Log/lisnode.log";
+#endif  // WIN32
+
+  el::Loggers::reconfigureAllLoggers(el::ConfigurationType::Filename,
+                                     kLogFileName);
+  el::Loggers::reconfigureAllLoggers(el::Level::Error,
+                                     el::ConfigurationType::Format,
+                                     "%datetime %level [%logger]: %func %msg");
+}
+
 // Safe to call more than once and from signal handlers.
 void ResetStdio() {
   uv_tty_reset_mode();
@@ -749,6 +785,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
                            std::vector<std::string>* errors) {
   // Make sure InitializeNodeWithArgs() is called only once.
   CHECK(!init_called.exchange(true));
+
+  InitializeLogger();
 
   // Initialize node_start_time to get relative uptime.
   per_process::node_start_time = uv_hrtime();
@@ -1016,25 +1054,7 @@ void TearDownOncePerProcess() {
   init_called.exchange(false);
 }
 
-void CreateLogDirecroryIfNotExist() {
-  constexpr const char* log_dir_path = "Log\\";
-
-  struct stat info {};
-
-  if (stat(log_dir_path, &info) != 0 || !(info.st_mode & S_IFDIR)) {
-    constexpr int nMode = 0777;  // UNIX style permissions
-    int nError = 0;
-#if defined(_WIN32)
-    nError = _mkdir(log_dir_path);
-#else
-    nError = mkdir(log_dir_path, nMode);
-#endif
-  }
-}
-
 int Start(int argc, char** argv) {
-  CreateLogDirecroryIfNotExist();
-
   InitializationResult result = InitializeOncePerProcess(argc, argv);
   if (result.early_return) {
     return result.exit_code;

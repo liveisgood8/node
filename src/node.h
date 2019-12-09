@@ -232,6 +232,8 @@ NODE_EXTERN void Init(int* argc,
 
 NODE_EXTERN void TearDown();
 
+NODE_EXTERN void InitializeLogger();
+
 enum OptionEnvvarSettings {
   kAllowedInEnvironment,
   kDisallowedInEnvironment
