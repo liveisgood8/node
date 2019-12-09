@@ -240,15 +240,19 @@ void AppendExceptionLine(Environment* env,
   ABORT_NO_BACKTRACE();
 }
 
-    [[noreturn]] void Assert(const AssertionInfo& info) {
+[[noreturn]] void Assert(const AssertionInfo& info) {
   char name[1024];
   GetHumanReadableProcessName(&name);
 
-  std::cerr << name << ": " << info.file_line << ":" << info.function
+  std::ostringstream stream;
+  stream << name << ": " << info.file_line << ":" << info.function
             << (*info.function ? ":" : "") << " Assertion `"
             << info.message << "' failed.\n";
 
-  Abort();
+  const std::string errorString = stream.str();
+  std::cerr << errorString;
+  
+  throw std::runtime_error(errorString.c_str());
 }
 
 enum class EnhanceFatalException { kEnhance, kDontEnhance };

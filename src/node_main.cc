@@ -25,9 +25,15 @@
 
 #include "node.h"
 
+constexpr int kExceptionExitCode = 500;
 
 extern "C" NODE_EXTERN int __stdcall MainStart(int argc, char* argv[]) {
-  return node::Start(argc, argv);
+  try {
+    return node::Start(argc, argv);
+  }
+  catch (const std::exception &) {
+    return kExceptionExitCode;
+  }
 }
 
 extern "C" NODE_EXTERN int __stdcall Init(int argc, char* argv[]) {
@@ -35,7 +41,11 @@ extern "C" NODE_EXTERN int __stdcall Init(int argc, char* argv[]) {
 }
 
 extern "C" NODE_EXTERN int __stdcall Eval(const char* script, const char* inputArgsJson, bool isDebug) {
-  return node::EvalScript(script, inputArgsJson, isDebug);
+  try {
+    return node::EvalScript(script, inputArgsJson, isDebug);
+  } catch (const std::exception&) {
+    return kExceptionExitCode;
+  }
 }
 
 extern "C" NODE_EXTERN void __stdcall TearDown() {
