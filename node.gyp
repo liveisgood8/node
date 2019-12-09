@@ -316,7 +316,8 @@
 
       'include_dirs': [
         'src',
-        'deps/v8/include'
+        'deps/v8/include',
+        'deps/easylogging'
       ],
 
       'sources': [

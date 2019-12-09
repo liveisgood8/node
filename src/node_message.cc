@@ -64,35 +64,20 @@ static void ShowMessageBox(const FunctionCallbackInfo<Value>& args) {
 #ifdef WIN32
   Environment* env = Environment::GetCurrent(args);
 
-  CHECK_GE(args.Length(), 1);
+  CHECK_EQ(args.Length(), 3);
+  CHECK(args[0]->IsString());
+  CHECK(args[1]->IsString());
+  CHECK(args[2]->IsInt32());
 
-  std::wstring message;
-  if (args[0]->IsObject() && !args[0]->IsDate()) {
-    auto jsString = JSON::Stringify(env->context(),
-                                    args[0],
-                                    FIXED_ONE_BYTE_STRING(env->isolate(), "\t"))
-                        .ToLocalChecked();
 
-    String::Utf8Value jsStringValue(env->isolate(), jsString);
-    message = Utf8ToWin1251(*jsStringValue);
-  }
-  else {
-    String::Utf8Value jsStringValue(env->isolate(), args[0]);
-    message = Utf8ToWin1251(*jsStringValue);
-  }
+  String::Utf8Value jsMessage(env->isolate(), args[0]);
+  String::Utf8Value jsTitle(env->isolate(), args[1]);
+  UINT flags = args[2]->Uint32Value(env->context()).FromJust();
 
-  std::wstring title = L"Внимание";
-  if (args.Length() > 1) {
-    String::Utf8Value jsTitle(env->isolate(), args[1]);
-    title = Utf8ToWin1251(*jsTitle);
-  }
-
-  UINT flags = 0;
-  if (args.Length() > 2 && args[2]->IsUint32()) {
-    flags = args[2]->Uint32Value(env->context()).FromJust();
-  }
-
-  int result = ::MessageBoxW(nullptr, message.c_str(), title.c_str(), flags);
+  int result = ::MessageBoxW(nullptr,
+                             Utf8ToWin1251(*jsMessage).c_str(),
+                             Utf8ToWin1251(*jsTitle).c_str(),
+                             flags);
   args.GetReturnValue().Set(result);
 #else
   args.GetReturnValue().Set(0);
