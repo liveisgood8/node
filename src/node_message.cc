@@ -92,11 +92,7 @@ static void ShowMessageBox(const FunctionCallbackInfo<Value>& args) {
     flags = args[2]->Uint32Value(env->context()).FromJust();
   }
 
-  int result = MessageBoxW(nullptr,
-                           message.c_str(),
-                           title.c_str(),
-                           flags);
-
+  int result = ::MessageBoxW(nullptr, message.c_str(), title.c_str(), flags);
   args.GetReturnValue().Set(result);
 #else
   args.GetReturnValue().Set(0);
