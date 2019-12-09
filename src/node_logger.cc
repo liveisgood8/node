@@ -47,19 +47,12 @@ std::string Stringify(const FunctionCallbackInfo<Value>& args) {
 
   std::string message = "__InnerLog__: ";
 
-  const auto dateObject =
-      env->context()
-          ->Global()
-          ->Get(env->context(), FIXED_ONE_BYTE_STRING(env->isolate(), "Date"))
-          .ToLocalChecked()
-          .As<Object>();
-
   for (int i = 0; i < args.Length(); i++) {
     if (i != 0) {
       message += ", ";
     }
 
-    if (args[i]->IsObject() && !args[i]->InstanceOf(env->context(), dateObject).FromJust()) {
+    if (args[i]->IsObject() && !args[i]->IsDate()) {
       auto jsString =
           JSON::Stringify(env->context(),
                           args[i],
