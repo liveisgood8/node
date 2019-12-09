@@ -7,6 +7,7 @@
 #ifdef NODE_REPORT
 #include "node_report.h"
 #endif
+#include "easylogging++.h"
 #include "node_process.h"
 #include "node_v8_platform-inl.h"
 #include "util-inl.h"
@@ -153,13 +154,15 @@ void PrintStackTrace(Isolate* isolate, Local<StackTrace> stack) {
       if (stack_frame->GetScriptId() == Message::kNoScriptIdInfo) {
         std::cerr << "    at [eval]:" << line_number << ":" << column << "\n";
       } else {
-        std::cerr << "    at [eval] (" << *script_name << ":" << line_number << ":" <<column << ")\n";
+        std::cerr << "    at [eval] (" << *script_name << ":" << line_number
+                  << ":" << column << ")\n";
       }
       break;
     }
 
     if (fn_name_s.length() == 0) {
-      std::cerr << "    at " << *script_name << ":" << line_number << ":" << column << "\n";
+      std::cerr << "    at " << *script_name << ":" << line_number << ":"
+                << column << "\n";
     } else {
       std::cerr << "    at " << *fn_name_s << " (" << *script_name << ":"
                 << line_number << ":" << column << ")\n";
@@ -237,21 +240,22 @@ void AppendExceptionLine(Environment* env,
 [[noreturn]] void Abort() {
   DumpBacktrace(stderr);
   fflush(stderr);
-  ABORT_NO_BACKTRACE();
+
+  throw std::runtime_error("FATAL ERROR");
 }
 
-[[noreturn]] void Assert(const AssertionInfo& info) {
+    [[noreturn]] void Assert(const AssertionInfo& info) {
   char name[1024];
   GetHumanReadableProcessName(&name);
 
   std::ostringstream stream;
   stream << name << ": " << info.file_line << ":" << info.function
-            << (*info.function ? ":" : "") << " Assertion `"
-            << info.message << "' failed.\n";
+         << (*info.function ? ":" : "") << " Assertion `" << info.message
+         << "' failed.\n";
 
   const std::string errorString = stream.str();
   std::cerr << errorString;
-  
+
   throw std::runtime_error(errorString.c_str());
 }
 
@@ -399,6 +403,8 @@ void PrintErrorString(const char* format, ...) {
   vsprintf(out.data(), format, ap);
 
   std::cerr << out.data();
+
+  LOG(ERROR) << out.data();
 
   va_end(ap);
 }
