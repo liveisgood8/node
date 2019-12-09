@@ -38,43 +38,63 @@ using v8::Local;
 using v8::Isolate;
 using v8::EscapableHandleScope;
 using v8::Uint32;
+using v8::JSON;
+
+static std::wstring Utf8ToWin1251(const char *str) {
+  DWORD result_u = ::MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
+  if (!result_u) {
+    std::cerr << "showMessageBox: cannot convert utf8 string to win1251";
+    return std::wstring();
+  }
+
+  wchar_t* ures = new wchar_t[result_u];
+  if (!::MultiByteToWideChar(CP_UTF8, 0, str, -1, ures, result_u)) {
+    std::cerr << "showMessageBox: cannot convert utf8 string to win1251";
+    delete[] ures;
+    return std::wstring();
+  }
+
+  std::wstring result(ures);
+  delete[] ures;
+
+  return result;
+}
 
 static void ShowMessageBox(const FunctionCallbackInfo<Value>& args) {
 #ifdef WIN32
   Environment* env = Environment::GetCurrent(args);
 
-  CHECK_EQ(args.Length(), 3);
-  CHECK(args[0]->IsString()); // Text
-  CHECK(args[1]->IsString()); // Title
-  CHECK(args[2]->IsUint32()); // Flags
+  CHECK_GE(args.Length(), 1);
 
-  const auto Utf8ToWin1251 = [](const char* str) {
-    DWORD result_u = ::MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
-    if (!result_u) {
-      std::cerr << "showMessageBox: cannot convert utf8 string to win1251";
-      return std::wstring();
-    }
+  std::wstring message;
+  if (args[0]->IsObject() && !args[0]->IsDate()) {
+    auto jsString = JSON::Stringify(env->context(),
+                                    args[0],
+                                    FIXED_ONE_BYTE_STRING(env->isolate(), "\t"))
+                        .ToLocalChecked();
 
-    wchar_t* ures = new wchar_t[result_u];
-    if (!::MultiByteToWideChar(CP_UTF8, 0, str, -1, ures, result_u)) {
-      std::cerr << "showMessageBox: cannot convert utf8 string to win1251";
-      delete[] ures;
-      return std::wstring();
-    }
+    String::Utf8Value jsStringValue(env->isolate(), jsString);
+    message = Utf8ToWin1251(*jsStringValue);
+  }
+  else {
+    String::Utf8Value jsStringValue(env->isolate(), args[0]);
+    message = Utf8ToWin1251(*jsStringValue);
+  }
 
-    std::wstring result(ures);
-    delete[] ures;
+  std::wstring title = L"Внимание";
+  if (args.Length() > 1) {
+    String::Utf8Value jsTitle(env->isolate(), args[1]);
+    title = Utf8ToWin1251(*jsTitle);
+  }
 
-    return result;
-  };
-
-  String::Utf8Value jsText(env->isolate(), args[0]);
-  String::Utf8Value jsTitle(env->isolate(), args[1]);
-  const UINT flags = args[2]->Uint32Value(env->context()).FromJust();
+  UINT flags = 0;
+  if (args.Length() > 2 && args[2]->IsUint32()) {
+    flags = args[2]->Uint32Value(env->context()).FromJust();
+  }
 
   int result = MessageBoxW(nullptr,
-                           Utf8ToWin1251(*jsText).c_str(),
-                           Utf8ToWin1251(*jsTitle).c_str(),
+                           message.c_str(),
+                           title.c_str(),
                            flags);
 
   args.GetReturnValue().Set(result);
