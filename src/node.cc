@@ -644,7 +644,9 @@ NODE_EXTERN void InitializeLogger() {
 #else
   constexpr const char* kLogFileName = "Log/lisnode.log";
 #endif  // WIN32
-
+  el::Loggers::reconfigureAllLoggers(el::Level::Error,
+                                    el::ConfigurationType::ToStandardOutput,
+                                    "false");
   el::Loggers::reconfigureAllLoggers(el::ConfigurationType::Filename,
                                      kLogFileName);
   el::Loggers::reconfigureAllLoggers(el::Level::Error,

@@ -403,8 +403,7 @@ void PrintErrorString(const char* format, ...) {
   vsprintf(out.data(), format, ap);
 
   std::cerr << out.data();
-
-  LOG(ERROR) << out.data();
+  LOG(ERROR) << "\n" << out.data();
 
   va_end(ap);
 }
