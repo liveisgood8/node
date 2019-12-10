@@ -169,7 +169,7 @@ class EnvironmentOptions : public Options {
 
   std::string input_args_json;
 
-  int lis_user_id = 0;
+  uint64_t lis_user_id = 0;
 
   inline DebugOptions* get_debug_options();
   inline const DebugOptions& debug_options() const;

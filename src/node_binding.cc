@@ -443,7 +443,7 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
 
   exports->Set(context,
                String::NewFromUtf8(env->isolate(), "__lisUserId").ToLocalChecked(),
-               Int32::New(env->isolate(), env->options()->lis_user_id));
+               Int32::New(env->isolate(), static_cast<int32_t>(env->options()->lis_user_id)));
 
   node::Utf8Value filename(env->isolate(), args[1]);  // Cast
   env->TryLoadAddon(*filename, flags, [&](DLib* dlib) {
