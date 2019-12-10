@@ -640,9 +640,9 @@ NODE_EXTERN void InitializeLogger() {
   CreateLogDirecroryIfNotExist();
 
 #ifdef WIN32
-  constexpr const char* kLogFileName = "Log\\lisnode.log";
+  constexpr const char* kLogFileName = "Log\\lis_node.log";
 #else
-  constexpr const char* kLogFileName = "Log/lisnode.log";
+  constexpr const char* kLogFileName = "Log/lis_node.log";
 #endif  // WIN32
   el::Loggers::reconfigureAllLoggers(el::Level::Error,
                                     el::ConfigurationType::ToStandardOutput,
