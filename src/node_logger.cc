@@ -42,7 +42,7 @@ static bool isLoggerInitialized = false;
 std::string Stringify(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args);
 
-  std::string message = "__InnerLog__: ";
+  std::string message = "[I] ";
 
   for (int i = 0; i < args.Length(); i++) {
     if (i != 0) {
