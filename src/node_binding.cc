@@ -242,6 +242,8 @@ using v8::NewStringType;
 using v8::Object;
 using v8::String;
 using v8::Value;
+using v8::Int32;
+
 
 // Globals per process
 static node_module* modlist_internal;
@@ -438,6 +440,10 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
       !exports_v->ToObject(context).ToLocal(&exports)) {
     return;  // Exception pending.
   }
+
+  exports->Set(context,
+               String::NewFromUtf8(env->isolate(), "__lisUserId").ToLocalChecked(),
+               Int32::New(env->isolate(), env->options()->lis_user_id));
 
   node::Utf8Value filename(env->isolate(), args[1]);  // Cast
   env->TryLoadAddon(*filename, flags, [&](DLib* dlib) {
