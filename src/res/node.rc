@@ -23,10 +23,6 @@
 #include "node_version.h"
 
 
-// Application icon
-1 ICON node.ico
-
-
 // Version resource
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION NODE_MAJOR_VERSION,NODE_MINOR_VERSION,NODE_PATCH_VERSION,0
@@ -50,12 +46,12 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "CompanyName", "Node.js"
-            VALUE "ProductName", "Node.js"
-            VALUE "FileDescription", "Node.js: Server-side JavaScript"
+            VALUE "CompanyName", "ChemSoft"
+            VALUE "ProductName", "ChemSoft Node.js fork"
+            VALUE "FileDescription", "ChemSoft Node.js: engine for sheduler 2.0"
             VALUE "FileVersion", NODE_EXE_VERSION
             VALUE "ProductVersion", NODE_EXE_VERSION
-            VALUE "OriginalFilename", "node.exe"
+            VALUE "OriginalFilename", "node.dll"
             VALUE "InternalName", "node"
             VALUE "LegalCopyright", "Copyright Node.js contributors. MIT license."
         END
