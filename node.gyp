@@ -15,6 +15,7 @@
     'node_shared_zlib%': 'false',
     'node_shared_http_parser%': 'false',
     'node_shared_cares%': 'false',
+    'node_shared_qt_sql%': 'false',
     'node_shared_libuv%': 'false',
     'node_shared_nghttp2%': 'false',
     'node_use_openssl%': 'true',
@@ -23,6 +24,10 @@
     'node_core_target_name%': 'node',
     'node_lib_target_name%': 'libnode',
     'node_intermediate_lib_type%': 'static_library',
+    'qt_libs_home%': 'E:/Programs/QtStatic/qt5-static-build/install/lib',
+    'qt_plugins_libs_home%': 'E:/Programs/QtStatic/qt5-static-build/install/plugins',
+    'oracle_oci_lib_home%': 'E:/Programs/oracle/instantclient_11_2/oci/lib/msvc',
+    'qt_debug_postfix%': 'd',
     'library_files': [
       'lib/internal/bootstrap/environment.js',
       'lib/internal/bootstrap/loaders.js',
@@ -38,6 +43,7 @@
       'lib/constants.js',
       'lib/crypto.js',
       'lib/cluster.js',
+      'lib/db.js',
       'lib/dgram.js',
       'lib/dns.js',
       'lib/domain.js',
@@ -326,6 +332,16 @@
 
       'dependencies': [ 'deps/histogram/histogram.gyp:histogram' ],
 
+      'libraries': [
+        '<(qt_libs_home)/Qt5Core<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_libs_home)/Qt5Sql<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_libs_home)/qtpcre2<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/platforms/qwindows<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/sqldrivers/qsqloci<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/sqldrivers/qsqlodbc<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(oracle_oci_lib_home)/oci<(STATIC_LIB_SUFFIX)'
+      ],
+
       'msvs_settings': {
         'VCLinkerTool': {
           'GenerateMapFile': 'true', # /MAP
@@ -356,6 +372,7 @@
             'OTHER_LDFLAGS': [
               '-Wl,-force_load,<(PRODUCT_DIR)/<(STATIC_LIB_PREFIX)<(node_core_target_name)<(STATIC_LIB_SUFFIX)',
               '-Wl,-force_load,<(PRODUCT_DIR)/<(STATIC_LIB_PREFIX)v8_base_without_compiler<(STATIC_LIB_SUFFIX)',
+              '-Wl,-force_load,<(PRODUCT_DIR)/NodeQtSql<(STATIC_LIB_SUFFIX)'
             ],
           },
           'msvs_settings': {
@@ -363,6 +380,7 @@
               'AdditionalOptions': [
                 '/WHOLEARCHIVE:<(node_lib_target_name)<(STATIC_LIB_SUFFIX)',
                 '/WHOLEARCHIVE:<(STATIC_LIB_PREFIX)v8_base_without_compiler<(STATIC_LIB_SUFFIX)',
+                '/WHOLEARCHIVE:NodeQtSql<(STATIC_LIB_SUFFIX)'
               ],
             },
           },
@@ -372,6 +390,7 @@
                 '-Wl,--whole-archive',
                 '<(obj_dir)/<(STATIC_LIB_PREFIX)<(node_core_target_name)<(STATIC_LIB_SUFFIX)',
                 '<(obj_dir)/tools/v8_gypfiles/<(STATIC_LIB_PREFIX)v8_base_without_compiler<(STATIC_LIB_SUFFIX)',
+                '<(obj_dir)/NodeQtSql<(STATIC_LIB_SUFFIX)',
                 '-Wl,--no-whole-archive',
               ],
             }],
@@ -404,6 +423,11 @@
             'Dbghelp.lib',
             'winmm.lib',
             'Ws2_32.lib',
+            'Version.lib',
+            'Netapi32.lib',
+            'Userenv.lib',
+            'ole32.lib',
+            'odbc32.lib'
           ],
         }],
         ['node_with_ltcg=="true"', {
@@ -497,6 +521,7 @@
       'include_dirs': [
         'src',
         'deps/easylogging',
+        'deps/qt-sql/include',
         '<(SHARED_INTERMEDIATE_DIR)' # for node_natives.h
       ],
       'dependencies': [ 'deps/histogram/histogram.gyp:histogram' ],
@@ -534,6 +559,7 @@
         'src/node_constants.cc',
         'src/node_contextify.cc',
         'src/node_credentials.cc',
+        'src/node_db.cc',
         'src/node_dir.cc',
         'src/node_domain.cc',
         'src/node_env_var.cc',
@@ -1121,6 +1147,16 @@
         'test/cctest/test_url.cc',
       ],
 
+      'libraries': [
+        '<(qt_libs_home)/Qt5Core<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_libs_home)/Qt5Sql<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_libs_home)/qtpcre2<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/platforms/qwindows<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/sqldrivers/qsqloci<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/sqldrivers/qsqlodbc<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(oracle_oci_lib_home)/oci<(STATIC_LIB_SUFFIX)'
+      ],
+
       'conditions': [
         [ 'node_use_openssl=="true"', {
           'defines': [
@@ -1172,6 +1208,11 @@
             'Dbghelp.lib',
             'winmm.lib',
             'Ws2_32.lib',
+            'Version.lib',
+            'Netapi32.lib',
+            'Userenv.lib',
+            'ole32.lib',
+            'odbc32.lib'
           ],
         }],
       ],
@@ -1215,6 +1256,16 @@
         'tools/code_cache/cache_builder.h',
       ],
 
+      'libraries': [
+        '<(qt_libs_home)/Qt5Core<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_libs_home)/Qt5Sql<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_libs_home)/qtpcre2<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/platforms/qwindows<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/sqldrivers/qsqloci<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/sqldrivers/qsqlodbc<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(oracle_oci_lib_home)/oci<(STATIC_LIB_SUFFIX)'
+      ],
+
       'conditions': [
         ['OS=="win"', {
           'libraries': [
@@ -1222,6 +1273,11 @@
             'PsApi.lib',
             'winmm.lib',
             'Ws2_32.lib',
+            'Version.lib',
+            'Netapi32.lib',
+            'Userenv.lib',
+            'ole32.lib',
+            'odbc32.lib'
           ],
         }],
       ],
@@ -1257,12 +1313,27 @@
         'tools/snapshot/snapshot_builder.h',
       ],
 
+      'libraries': [
+        '<(qt_libs_home)/Qt5Core<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_libs_home)/Qt5Sql<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_libs_home)/qtpcre2<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/platforms/qwindows<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/sqldrivers/qsqloci<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/sqldrivers/qsqlodbc<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(oracle_oci_lib_home)/oci<(STATIC_LIB_SUFFIX)'
+      ],
+
       'conditions': [
         ['OS=="win"', {
           'libraries': [
             'Dbghelp.lib',
             'winmm.lib',
             'Ws2_32.lib',
+            'Version.lib',
+            'Netapi32.lib',
+            'Userenv.lib',
+            'ole32.lib',
+            'odbc32.lib'
           ],
         }],
       ],

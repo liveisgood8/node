@@ -176,6 +176,35 @@
       ],
     }],
 
+    [ 'node_shared_qt_sql=="false"', {
+      'dependencies': [ 'deps/qt-sql/qtsql.gyp:NodeQtSql' ],
+      'conditions': [
+        [ 'force_load=="true"', {
+          'xcode_settings': {
+            'OTHER_LDFLAGS': [
+              '-Wl,-force_load,<(PRODUCT_DIR)/NodeQtSql<(STATIC_LIB_SUFFIX)',
+            ],
+          },
+          'msvs_settings': {
+            'VCLinkerTool': {
+              'AdditionalOptions': [
+                '/WHOLEARCHIVE:NodeQtSql<(STATIC_LIB_SUFFIX)',
+              ],
+            },
+          },
+          'conditions': [
+            ['OS!="aix" and node_shared=="false"', {
+              'ldflags': [
+                '-Wl,--whole-archive',
+                '<(obj_dir)/NodeQtSql<(STATIC_LIB_SUFFIX)',
+                '-Wl,--no-whole-archive',
+              ],
+            }],
+          ],
+        }],
+      ],
+    }],
+
     [ 'node_shared_nghttp2=="false"', {
       'dependencies': [ 'deps/nghttp2/nghttp2.gyp:nghttp2' ],
     }],
