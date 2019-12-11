@@ -24,10 +24,9 @@
     'node_core_target_name%': 'node',
     'node_lib_target_name%': 'libnode',
     'node_intermediate_lib_type%': 'static_library',
-    'qt_libs_home%': 'E:/Programs/QtStatic/qt5-static-build/install/lib',
-    'qt_plugins_libs_home%': 'E:/Programs/QtStatic/qt5-static-build/install/plugins',
-    'oracle_oci_lib_home%': 'E:/Programs/oracle/instantclient_11_2/oci/lib/msvc',
-    'qt_debug_postfix%': 'd',
+    'qt_libs_home%': 'deps/qt-sql/libs/$(Configuration)/qt5',
+    'qt_plugins_libs_home%': 'deps/qt-sql/libs/$(Configuration)/qt5/plugins',
+    'oracle_oci_lib_home%': 'deps/qt-sql/libs/$(Configuration)/oracle',
     'library_files': [
       'lib/internal/bootstrap/environment.js',
       'lib/internal/bootstrap/loaders.js',
@@ -333,12 +332,12 @@
       'dependencies': [ 'deps/histogram/histogram.gyp:histogram' ],
 
       'libraries': [
-        '<(qt_libs_home)/Qt5Core<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
-        '<(qt_libs_home)/Qt5Sql<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
-        '<(qt_libs_home)/qtpcre2<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
-        '<(qt_plugins_libs_home)/platforms/qwindows<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
-        '<(qt_plugins_libs_home)/sqldrivers/qsqloci<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
-        '<(qt_plugins_libs_home)/sqldrivers/qsqlodbc<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_libs_home)/Qt5Core<(STATIC_LIB_SUFFIX)',
+        '<(qt_libs_home)/Qt5Sql<(STATIC_LIB_SUFFIX)',
+        '<(qt_libs_home)/qtpcre2<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/platforms/qwindows<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/sqldrivers/qsqloci<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/sqldrivers/qsqlodbc<(STATIC_LIB_SUFFIX)',
         '<(oracle_oci_lib_home)/oci<(STATIC_LIB_SUFFIX)'
       ],
 
@@ -1148,12 +1147,12 @@
       ],
 
       'libraries': [
-        '<(qt_libs_home)/Qt5Core<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
-        '<(qt_libs_home)/Qt5Sql<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
-        '<(qt_libs_home)/qtpcre2<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
-        '<(qt_plugins_libs_home)/platforms/qwindows<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
-        '<(qt_plugins_libs_home)/sqldrivers/qsqloci<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
-        '<(qt_plugins_libs_home)/sqldrivers/qsqlodbc<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_libs_home)/Qt5Core<(STATIC_LIB_SUFFIX)',
+        '<(qt_libs_home)/Qt5Sql<(STATIC_LIB_SUFFIX)',
+        '<(qt_libs_home)/qtpcre2<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/platforms/qwindows<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/sqldrivers/qsqloci<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/sqldrivers/qsqlodbc<(STATIC_LIB_SUFFIX)',
         '<(oracle_oci_lib_home)/oci<(STATIC_LIB_SUFFIX)'
       ],
 
@@ -1257,12 +1256,12 @@
       ],
 
       'libraries': [
-        '<(qt_libs_home)/Qt5Core<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
-        '<(qt_libs_home)/Qt5Sql<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
-        '<(qt_libs_home)/qtpcre2<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
-        '<(qt_plugins_libs_home)/platforms/qwindows<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
-        '<(qt_plugins_libs_home)/sqldrivers/qsqloci<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
-        '<(qt_plugins_libs_home)/sqldrivers/qsqlodbc<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_libs_home)/Qt5Core<(STATIC_LIB_SUFFIX)',
+        '<(qt_libs_home)/Qt5Sql<(STATIC_LIB_SUFFIX)',
+        '<(qt_libs_home)/qtpcre2<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/platforms/qwindows<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/sqldrivers/qsqloci<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/sqldrivers/qsqlodbc<(STATIC_LIB_SUFFIX)',
         '<(oracle_oci_lib_home)/oci<(STATIC_LIB_SUFFIX)'
       ],
 
@@ -1314,12 +1313,12 @@
       ],
 
       'libraries': [
-        '<(qt_libs_home)/Qt5Core<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
-        '<(qt_libs_home)/Qt5Sql<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
-        '<(qt_libs_home)/qtpcre2<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
-        '<(qt_plugins_libs_home)/platforms/qwindows<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
-        '<(qt_plugins_libs_home)/sqldrivers/qsqloci<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
-        '<(qt_plugins_libs_home)/sqldrivers/qsqlodbc<(qt_debug_postfix)<(STATIC_LIB_SUFFIX)',
+        '<(qt_libs_home)/Qt5Core<(STATIC_LIB_SUFFIX)',
+        '<(qt_libs_home)/Qt5Sql<(STATIC_LIB_SUFFIX)',
+        '<(qt_libs_home)/qtpcre2<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/platforms/qwindows<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/sqldrivers/qsqloci<(STATIC_LIB_SUFFIX)',
+        '<(qt_plugins_libs_home)/sqldrivers/qsqlodbc<(STATIC_LIB_SUFFIX)',
         '<(oracle_oci_lib_home)/oci<(STATIC_LIB_SUFFIX)'
       ],
 
