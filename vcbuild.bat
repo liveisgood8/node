@@ -48,6 +48,7 @@ set enable_vtune_arg=
 set configure_flags=
 set build_addons=
 set dll=
+set noinspector=
 set enable_static=
 set build_js_native_api_tests=
 set build_node_api_tests=
@@ -87,6 +88,7 @@ if /i "%1"=="nosnapshot"    set nosnapshot=1&goto arg-ok
 if /i "%1"=="nossl"    		set nossl=1&goto arg-ok
 if /i "%1"=="nonpm"    		set nonpm=1&goto arg-ok
 if /i "%1"=="noetw"         set noetw=1&goto arg-ok
+if /i "%1"=="noinspector"   set noinspector=1&goto arg-ok
 if /i "%1"=="ltcg"          set ltcg=1&goto arg-ok
 if /i "%1"=="licensertf"    set licensertf=1&goto arg-ok
 if /i "%1"=="test"          set test_args=%test_args% -J %common_test_suites%&set lint_cpp=1&set lint_js=1&set lint_md=1&goto arg-ok
@@ -186,6 +188,7 @@ if "%config%"=="Debug"      set configure_flags=%configure_flags% --debug
 if defined nosnapshot       set configure_flags=%configure_flags% --without-snapshot
 if defined nossl       		set configure_flags=%configure_flags% --without-ssl
 if defined nonpm       		set configure_flags=%configure_flags% --without-npm
+if defined noinspector      set configure_flags=%configure_flags% --without-inspector
 if defined noetw            set configure_flags=%configure_flags% --without-etw& set noetw_msi_arg=/p:NoETW=1
 if defined ltcg             set configure_flags=%configure_flags% --with-ltcg
 if defined release_urlbase  set configure_flags=%configure_flags% --release-urlbase=%release_urlbase%
