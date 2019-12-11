@@ -26,8 +26,8 @@
 
 // ========== local headers ==========
 
-#include "easylogging++.h"
 #include "debug_utils.h"
+#include "easylogging++.h"
 #include "env-inl.h"
 #include "memory_tracker-inl.h"
 #include "node_binding.h"
@@ -122,7 +122,6 @@
 
 #include <string>
 #include <vector>
-
 
 INITIALIZE_EASYLOGGINGPP
 
@@ -644,16 +643,20 @@ NODE_EXTERN void InitializeLogger() {
 #else
   constexpr const char* kLogFileName = "Log/lis_node.log";
 #endif  // WIN32
-  el::Loggers::reconfigureAllLoggers(el::Level::Error,
-                                    el::ConfigurationType::ToStandardOutput,
-                                    "false");
   el::Loggers::reconfigureAllLoggers(el::ConfigurationType::Filename,
                                      kLogFileName);
   el::Loggers::reconfigureAllLoggers(el::Level::Error,
                                      el::ConfigurationType::Format,
                                      "%datetime %level [%logger]: %func %msg");
-}
 
+  if (per_process::cli_options->is_logger_stdout_disabled) {
+    el::Loggers::reconfigureAllLoggers(
+      el::ConfigurationType::ToStandardOutput, "false");
+  } else {
+    el::Loggers::reconfigureAllLoggers(
+        el::Level::Error, el::ConfigurationType::ToStandardOutput, "false");
+  }
+}
 // Safe to call more than once and from signal handlers.
 void ResetStdio() {
   uv_tty_reset_mode();
@@ -788,8 +791,6 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
   // Make sure InitializeNodeWithArgs() is called only once.
   CHECK(!init_called.exchange(true));
 
-  InitializeLogger();
-
   // Initialize node_start_time to get relative uptime.
   per_process::node_start_time = uv_hrtime();
 
@@ -916,6 +917,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
 #endif
 
   NativeModuleEnv::InitializeCodeCache();
+
+  InitializeLogger();
 
   // We should set node_is_initialized here instead of in node::Start,
   // otherwise embedders using node::Init to initialize everything will not be
@@ -1099,7 +1102,9 @@ int Stop(Environment* env) {
   return 0;
 }
 
-NODE_EXTERN int EvalScript(const char* script, const char* inputArgsJson, bool isDebug) {
+NODE_EXTERN int EvalScript(const char* script,
+                           const char* inputArgsJson,
+                           bool isDebug) {
   Isolate::CreateParams params;
   const std::vector<size_t>* indexes = nullptr;
   std::vector<intptr_t> external_references;
@@ -1122,7 +1127,12 @@ NODE_EXTERN int EvalScript(const char* script, const char* inputArgsJson, bool i
   uv_loop_init(loop.get());
 
   auto main_instance = std::unique_ptr<NodeMainInstance>(
-    new NodeMainInstance(&params, loop.get(), per_process::v8_platform.Platform(), {}, {}, indexes));
+      new NodeMainInstance(&params,
+                           loop.get(),
+                           per_process::v8_platform.Platform(),
+                           {},
+                           {},
+                           indexes));
 
   if (script) {
     main_instance->SetScript(script);

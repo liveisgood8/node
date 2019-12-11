@@ -647,7 +647,10 @@ PerProcessOptionsParser::PerProcessOptionsParser(
             "", /* undocumented, only for debugging */
             &PerProcessOptions::debug_arraybuffer_allocations,
             kAllowedInEnvironment);
-
+  AddOption("--disable-logger-stdout",
+            "disable logger stdout in console",
+            &PerProcessOptions::is_logger_stdout_disabled,
+            kAllowedInEnvironment);
 
   // 12.x renamed this inadvertently, so alias it for consistency within the
   // release line, while using the original name for consistency with older
