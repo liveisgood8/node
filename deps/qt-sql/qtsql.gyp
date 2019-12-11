@@ -1,7 +1,4 @@
 { 
-  'variables': { 
-    'qt_include_home%': 'E:/Programs/QtStatic/qt5-static-build/install/include'
-  },
   'targets': [ 
     { 
       'target_name': 'NodeQtSql', 
@@ -20,9 +17,9 @@
         '../../src/', 
         '../v8/include/',
         'deps/',
-        '<(qt_include_home)',
-        '<(qt_include_home)/QtCore',
-        '<(qt_include_home)/QtSql'
+        'deps/qt5/include',
+        'deps/qt5/include/QtCore',
+        'deps/qt5/include/QtSql'
       ]
     }
   ] 
