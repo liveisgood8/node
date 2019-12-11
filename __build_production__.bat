@@ -1,1 +1,1 @@
-.\vcbuild.bat static without-intl nonpm noetw x86
+.\vcbuild.bat static small-icu nonpm noetw x86
