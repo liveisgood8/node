@@ -1141,7 +1141,7 @@ NODE_EXTERN int EvalScript(const char* script,
     main_instance->SetInputArgsJson(inputArgsJson);
   }
 #if HAVE_INSPECTOR
-  main_instance.SetInspectorState(isDebug);
+  main_instance->SetInspectorState(isDebug);
 #endif  // HAVE_INSPECTOR
 
   auto result = main_instance->Run();
