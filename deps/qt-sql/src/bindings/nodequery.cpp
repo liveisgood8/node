@@ -28,8 +28,6 @@ using v8::Persistent;
 using v8::String;
 using v8::Value;
 
-Persistent<Function> NodeQuery::constructorFunction;
-
 NodeQuery::NodeQuery() : innerQuery(std::make_unique<QSqlQuery>()) {}
 
 NodeQuery::~NodeQuery() {}
@@ -64,8 +62,6 @@ void NodeQuery::init(Local<Object> exports) {
   NODE_SET_PROTOTYPE_METHOD(tpl, "lastError", &lastError);
 
   Local<Context> context = isolate->GetCurrentContext();
-  constructorFunction.Reset(isolate,
-                            tpl->GetFunction(context).ToLocalChecked());
   exports
       ->Set(context,
             String::NewFromUtf8(isolate, "Query", NewStringType::kNormal)
@@ -88,11 +84,8 @@ void NodeQuery::newObject(const v8::FunctionCallbackInfo<v8::Value>& args) {
     obj->Wrap(args.This());
     args.GetReturnValue().Set(args.This());
   } else {
-    // Invoked as plain function `MyObject(...)`, turn into construct call.
-    Local<Function> cons = Local<Function>::New(isolate, constructorFunction);
-    Local<Object> result =
-        cons->NewInstance(context, 0, nullptr).ToLocalChecked();
-    args.GetReturnValue().Set(result);
+    isolate->ThrowException(Exception::TypeError(
+      String::NewFromUtf8(isolate, "Query must call as constructor").ToLocalChecked()));
   }
 }
 

@@ -34,7 +34,7 @@ private:
     static void recordCount(const v8::FunctionCallbackInfo<v8::Value> &args);
     static void fieldsCount(const v8::FunctionCallbackInfo<v8::Value> &args);
     static void numRowsAffected(const v8::FunctionCallbackInfo<v8::Value> &args);
-	static void lastInsertId(const v8::FunctionCallbackInfo<v8::Value> &args);
+	  static void lastInsertId(const v8::FunctionCallbackInfo<v8::Value> &args);
 
     static void addParameter(const v8::FunctionCallbackInfo<v8::Value> &args);
     static void fieldValue(const v8::FunctionCallbackInfo<v8::Value> &args);
@@ -43,8 +43,6 @@ private:
     static void lastError(const v8::FunctionCallbackInfo<v8::Value> &args);
 
 private:
-    static v8::Persistent<v8::Function> constructorFunction;
-
     std::unique_ptr<QSqlQuery> innerQuery;
 };
 
