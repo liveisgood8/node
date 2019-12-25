@@ -91,15 +91,15 @@ Local<Object> CreateIconsConstObject(Environment *env) {
 
 #ifdef WIN32
   iconsObject->Set(env->context(),
-              FIXED_ONE_BYTE_STRING(env->isolate(), "warning"),
+              FIXED_ONE_BYTE_STRING(env->isolate(), "WARNING"),
               Uint32::New(env->isolate(), MB_ICONWARNING));
 
   iconsObject->Set(env->context(),
-              FIXED_ONE_BYTE_STRING(env->isolate(), "error"),
+              FIXED_ONE_BYTE_STRING(env->isolate(), "ERROR"),
               Uint32::New(env->isolate(), MB_ICONERROR));
 
   iconsObject->Set(env->context(),
-              FIXED_ONE_BYTE_STRING(env->isolate(), "asterisk"),
+              FIXED_ONE_BYTE_STRING(env->isolate(), "ASTERISK"),
               Uint32::New(env->isolate(), MB_ICONASTERISK));
 
   iconsObject->Set(env->context(),
@@ -107,15 +107,15 @@ Local<Object> CreateIconsConstObject(Environment *env) {
               Uint32::New(env->isolate(), MB_ICONINFORMATION));
 #else
   iconsObject->Set(env->context(),
-              FIXED_ONE_BYTE_STRING(env->isolate(), "warning"),
+              FIXED_ONE_BYTE_STRING(env->isolate(), "WARNING"),
               Uint32::New(env->isolate(), 0));
 
   iconsObject->Set(env->context(),
-              FIXED_ONE_BYTE_STRING(env->isolate(), "error"),
+              FIXED_ONE_BYTE_STRING(env->isolate(), "ERROR"),
               Uint32::New(env->isolate(), 0));
 
   iconsObject->Set(env->context(),
-              FIXED_ONE_BYTE_STRING(env->isolate(), "asterisk"),
+              FIXED_ONE_BYTE_STRING(env->isolate(), "ASTERISK"),
               Uint32::New(env->isolate(), 0));
 
   iconsObject->Set(env->context(),
@@ -133,60 +133,60 @@ Local<Object> CreateButtonsConstObject(Environment* env) {
 
 #ifdef WIN32
   buttonsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "abortRetryIgnore"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "ABORT_RETRY_IGNORE"),
                      Uint32::New(env->isolate(), MB_ABORTRETRYIGNORE));
 
   buttonsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "cancelTryContinue"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "CANCEL_TRY_CONTINUE"),
                      Uint32::New(env->isolate(), MB_CANCELTRYCONTINUE));
 
   buttonsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "help"),
-                     Uint32::New(env->isolate(), MB_HELP));
-
-
-  buttonsObject->Set(env->context(),
-                   FIXED_ONE_BYTE_STRING(env->isolate(), "ok"),
+                   FIXED_ONE_BYTE_STRING(env->isolate(), "OK"),
                    Uint32::New(env->isolate(), MB_OK));
 
   buttonsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "retryCancel"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "OK_CANCEL"),
+                     Uint32::New(env->isolate(), MB_OKCANCEL));
+
+  buttonsObject->Set(env->context(),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "RETRY_CANCEL"),
                      Uint32::New(env->isolate(), MB_RETRYCANCEL));
 
   buttonsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "yesNo"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "YES_NO"),
                      Uint32::New(env->isolate(), MB_YESNO));
 
   buttonsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "yesNoCancel"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "YES_NO_CANCEL"),
                      Uint32::New(env->isolate(), MB_YESNOCANCEL));
 #else
   buttonsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "abortRetryIgnore"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "ABORT_RETRY_IGNORE"),
                      Uint32::New(env->isolate(), 0));
 
   buttonsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "cancelTryContinue"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "CANCEL_TRY_CONTINUE"),
                      Uint32::New(env->isolate(), 0));
 
-  buttonsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "help"),
-                     Uint32::New(env->isolate(), 0));
 
   buttonsObject->Set(env->context(),
-                   FIXED_ONE_BYTE_STRING(env->isolate(), "ok"),
+                   FIXED_ONE_BYTE_STRING(env->isolate(), "OK"),
                    Uint32::New(env->isolate(), 0));
 
   buttonsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "retryCancel"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "OK_CANCEL"),
                      Uint32::New(env->isolate(), 0));
 
   buttonsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "yesNo"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "RETRY_CANCEL"),
                      Uint32::New(env->isolate(), 0));
 
   buttonsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "yesNoCancel"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "YES_NO"),
+                     Uint32::New(env->isolate(), 0));
+
+  buttonsObject->Set(env->context(),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "YES_NO_CANCEL"),
                      Uint32::New(env->isolate(), 0));
 #endif  // WIN32
 
@@ -200,75 +200,75 @@ Local<Object> CreateResultsConstObject(Environment* env) {
 
 #ifdef WIN32
   resultsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "abort"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "ABORT"),
                      Uint32::New(env->isolate(), IDABORT));
 
   resultsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "cancel"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "CANCEL"),
                      Uint32::New(env->isolate(), IDCANCEL));
 
   resultsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "continue"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "CONTINUE"),
                      Uint32::New(env->isolate(), IDCONTINUE));
 
   resultsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "ignore"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "IGNORE"),
                      Uint32::New(env->isolate(), IDIGNORE));
 
   resultsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "no"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "NO"),
                      Uint32::New(env->isolate(), IDNO));
 
   resultsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "ok"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "OK"),
                      Uint32::New(env->isolate(), IDOK));
 
   resultsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "retry"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "RETRY"),
                      Uint32::New(env->isolate(), IDRETRY));
 
   resultsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "tryAgain"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "TRYAGAIN"),
                      Uint32::New(env->isolate(), IDTRYAGAIN));
 
   resultsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "yes"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "YES"),
                      Uint32::New(env->isolate(), IDYES));
 #else
   resultsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "abort"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "ABORT"),
                      Uint32::New(env->isolate(), 0));
 
   resultsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "cancel"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "CANCEL"),
                      Uint32::New(env->isolate(), 0));
 
   resultsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "continue"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "CONTINUE"),
                      Uint32::New(env->isolate(), 0));
 
   resultsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "ignore"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "IGNORE"),
                      Uint32::New(env->isolate(), 0));
 
   resultsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "no"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "NO"),
                      Uint32::New(env->isolate(), 0));
 
   resultsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "ok"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "OK"),
                      Uint32::New(env->isolate(), 0));
 
   resultsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "retry"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "RETRY"),
                      Uint32::New(env->isolate(), 0));
 
   resultsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "tryAgain"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "TRYAGAIN"),
                      Uint32::New(env->isolate(), 0));
 
   resultsObject->Set(env->context(),
-                     FIXED_ONE_BYTE_STRING(env->isolate(), "yes"),
+                     FIXED_ONE_BYTE_STRING(env->isolate(), "YES"),
                      Uint32::New(env->isolate(), 0));
 #endif  // WIN32
 
@@ -283,15 +283,15 @@ void Initialize(Local<Object> target,
   env->SetMethod(target, "showMessageBox", ShowMessageBox);
 
   target->Set(env->context(),
-              FIXED_ONE_BYTE_STRING(env->isolate(), "kIcons"),
+              FIXED_ONE_BYTE_STRING(env->isolate(), "Icons"),
               CreateIconsConstObject(env));
 
   target->Set(env->context(),
-              FIXED_ONE_BYTE_STRING(env->isolate(), "kButtons"),
+              FIXED_ONE_BYTE_STRING(env->isolate(), "Buttons"),
               CreateButtonsConstObject(env));
 
   target->Set(env->context(),
-              FIXED_ONE_BYTE_STRING(env->isolate(), "kResults"),
+              FIXED_ONE_BYTE_STRING(env->isolate(), "Results"),
               CreateResultsConstObject(env));
 }
 
