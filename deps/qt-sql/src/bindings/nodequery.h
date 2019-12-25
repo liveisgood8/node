@@ -37,6 +37,8 @@ private:
 	  static void lastInsertId(const v8::FunctionCallbackInfo<v8::Value> &args);
 
     static void addParameter(const v8::FunctionCallbackInfo<v8::Value> &args);
+    static void addDateParameter(const v8::FunctionCallbackInfo<v8::Value> &args);
+    static void addTimeParameter(const v8::FunctionCallbackInfo<v8::Value> &args);
     static void fieldValue(const v8::FunctionCallbackInfo<v8::Value> &args);
 
 

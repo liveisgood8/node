@@ -5,6 +5,7 @@
 #include <QtSql/QSqlError>
 #include <QtSql/QSqlQuery>
 #include <QtSql/QSqlRecord>
+#include <QtSql/QSqlDriver>
 
 #include "logger/easylogging++.h"
 
@@ -27,6 +28,56 @@ using v8::Object;
 using v8::Persistent;
 using v8::String;
 using v8::Value;
+
+bool validateDate(Isolate* isolate, int day, int month, int year) {
+  if (day < 1 || day > 31) {
+    auto errorString = String::NewFromUtf8(
+        isolate, "NodeQuery::validateDate day must be in range [0, 31]");
+    isolate->ThrowException(Exception::TypeError(errorString.ToLocalChecked()));
+    return false;
+  }
+
+  if (month < 1 || month > 12) {
+    auto errorString = String::NewFromUtf8(
+        isolate, "NodeQuery::validateDate month must be in range [0, 12]");
+    isolate->ThrowException(Exception::TypeError(errorString.ToLocalChecked()));
+    return false;
+  }
+
+  if (year < 1900 || year > 3000) {
+    auto errorString = String::NewFromUtf8(
+        isolate, "NodeQuery::validateDate year must be in range [1900, 3000]");
+    isolate->ThrowException(Exception::TypeError(errorString.ToLocalChecked()));
+    return false;
+  }
+
+  return true;
+}
+
+bool validateTime(Isolate* isolate, int hours, int minutes, int seconds) {
+  if (hours < 0 || hours > 24) {
+    auto errorString = String::NewFromUtf8(
+        isolate, "NodeQuery::validateTime hours must be in range [0, 24]");
+    isolate->ThrowException(Exception::TypeError(errorString.ToLocalChecked()));
+    return false;
+  }
+
+  if (minutes < 0 || minutes > 60) {
+    auto errorString = String::NewFromUtf8(
+        isolate, "NodeQuery::validateTime minutes must be in range [0, 60]");
+    isolate->ThrowException(Exception::TypeError(errorString.ToLocalChecked()));
+    return false;
+  }
+
+  if (seconds < 0 || seconds > 60) {
+    auto errorString = String::NewFromUtf8(
+        isolate, "NodeQuery::validateTime year must be in range [0, 60]");
+    isolate->ThrowException(Exception::TypeError(errorString.ToLocalChecked()));
+    return false;
+  }
+
+  return true;
+}
 
 NodeQuery::NodeQuery() : innerQuery(std::make_unique<QSqlQuery>()) {}
 
@@ -57,6 +108,8 @@ void NodeQuery::init(Local<Object> exports) {
   NODE_SET_PROTOTYPE_METHOD(tpl, "lastInsertId", &lastInsertId);
 
   NODE_SET_PROTOTYPE_METHOD(tpl, "addParameter", &addParameter);
+  NODE_SET_PROTOTYPE_METHOD(tpl, "addDateParameter", &addDateParameter);
+  NODE_SET_PROTOTYPE_METHOD(tpl, "addTimeParameter", &addTimeParameter);
   NODE_SET_PROTOTYPE_METHOD(tpl, "fieldValue", &fieldValue);
 
   NODE_SET_PROTOTYPE_METHOD(tpl, "lastError", &lastError);
@@ -85,7 +138,8 @@ void NodeQuery::newObject(const v8::FunctionCallbackInfo<v8::Value>& args) {
     args.GetReturnValue().Set(args.This());
   } else {
     isolate->ThrowException(Exception::TypeError(
-      String::NewFromUtf8(isolate, "Query must call as constructor").ToLocalChecked()));
+        String::NewFromUtf8(isolate, "Query must call as constructor")
+            .ToLocalChecked()));
   }
 }
 
@@ -94,7 +148,7 @@ void NodeQuery::prepare(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
   if (args.Length() < 1 || !args[0]->IsString()) {
     auto errorString = String::NewFromUtf8(
-        isolate, "NodeQuery::prepare nust receive sql query string");
+        isolate, "NodeQuery::prepare must receive sql query string");
     isolate->ThrowException(Exception::TypeError(errorString.ToLocalChecked()));
     return;
   }
@@ -236,6 +290,118 @@ void NodeQuery::addParameter(const v8::FunctionCallbackInfo<v8::Value>& args) {
   }
 }
 
+void NodeQuery::addDateParameter(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
+  auto isolate = args.GetIsolate();
+  auto context = isolate->GetCurrentContext();
+
+  if (args.Length() < 3) {
+    auto errorString = String::NewFromUtf8(
+        isolate, "NodeQuery::addDateParamter must receive year, month, day");
+    isolate->ThrowException(Exception::TypeError(errorString.ToLocalChecked()));
+    return;
+  }
+
+  if (!args[0]->IsInt32()) {
+    auto errorString =
+        String::NewFromUtf8(isolate,
+                            "NodeQuery::addDateParamter must receive day "
+                            "(number) as first parameter");
+    isolate->ThrowException(Exception::TypeError(errorString.ToLocalChecked()));
+    return;
+  }
+
+  if (!args[1]->IsInt32()) {
+    auto errorString =
+        String::NewFromUtf8(isolate,
+                            "NodeQuery::addDateParamter must receive month "
+                            "(number) as second parameter");
+    isolate->ThrowException(Exception::TypeError(errorString.ToLocalChecked()));
+    return;
+  }
+
+  if (!args[2]->IsInt32()) {
+    auto errorString =
+        String::NewFromUtf8(isolate,
+                            "NodeQuery::addDateParamter must receive year "
+                            "(number) as third parameter");
+    isolate->ThrowException(Exception::TypeError(errorString.ToLocalChecked()));
+    return;
+  }
+
+  const int day = args[0]->Int32Value(context).FromJust();
+  const int month = args[1]->Int32Value(context).FromJust();
+  const int year = args[2]->Int32Value(context).FromJust();
+
+  LOG(INFO) << "NodeQuery::addDateParamter: " << day << "." << month << "."
+            << year;
+
+  if (!validateDate(isolate, day, month, year)) {
+    return;
+  }
+
+  auto obj = ObjectWrap::Unwrap<NodeQuery>(args.Holder());
+
+  QDate date(year, month, day);
+  obj->innerQuery->addBindValue(std::move(date));
+}
+
+void NodeQuery::addTimeParameter(
+    const v8::FunctionCallbackInfo<v8::Value>& args) {
+  auto isolate = args.GetIsolate();
+  auto context = isolate->GetCurrentContext();
+
+  if (args.Length() < 3) {
+    auto errorString = String::NewFromUtf8(
+        isolate, "NodeQuery::addDateParamter must receive year, month, day");
+    isolate->ThrowException(Exception::TypeError(errorString.ToLocalChecked()));
+    return;
+  }
+
+  if (!args[0]->IsInt32()) {
+    auto errorString =
+        String::NewFromUtf8(isolate,
+                            "NodeQuery::addDateParamter must receive hours "
+                            "(number) as first parameter");
+    isolate->ThrowException(Exception::TypeError(errorString.ToLocalChecked()));
+    return;
+  }
+
+  if (!args[1]->IsInt32()) {
+    auto errorString =
+        String::NewFromUtf8(isolate,
+                            "NodeQuery::addDateParamter must receive minutes "
+                            "(number) as second parameter");
+    isolate->ThrowException(Exception::TypeError(errorString.ToLocalChecked()));
+    return;
+  }
+
+  if (!args[2]->IsInt32()) {
+    auto errorString =
+        String::NewFromUtf8(isolate,
+                            "NodeQuery::addDateParamter must receive seconds "
+                            "(number) as third parameter");
+    isolate->ThrowException(Exception::TypeError(errorString.ToLocalChecked()));
+    return;
+  }
+
+  const int hours = args[0]->Int32Value(context).FromJust();
+  const int minutes = args[1]->Int32Value(context).FromJust();
+  const int seconds = args[2]->Int32Value(context).FromJust();
+
+  if (!validateTime(isolate, hours, minutes, seconds)) {
+    return;
+  }
+
+  LOG(INFO) << "NodeQuery::addTimeParameter: " << hours << ":" << minutes << ":"
+            << seconds;
+
+  auto obj = ObjectWrap::Unwrap<NodeQuery>(args.Holder());
+
+  QTime time(hours, minutes, seconds);
+  obj->innerQuery->addBindValue(std::move(time));
+}
+
 void NodeQuery::fieldValue(const v8::FunctionCallbackInfo<v8::Value>& args) {
   auto isolate = args.GetIsolate();
   auto context = isolate->GetCurrentContext();
@@ -312,9 +478,15 @@ void NodeQuery::lastInsertId(const v8::FunctionCallbackInfo<v8::Value>& args) {
   auto isolate = args.GetIsolate();
   auto obj = ObjectWrap::Unwrap<NodeQuery>(args.Holder());
 
-  const auto lastInsertId = obj->query()->lastInsertId();
+  if (obj->query()->driver()->hasFeature(QSqlDriver::DriverFeature::LastInsertId))
+  {
+    const auto lastInsertId = obj->query()->lastInsertId();
+    args.GetReturnValue().Set(lastInsertId.isValid() ? lastInsertId.toInt() : -1);
 
-  args.GetReturnValue().Set(lastInsertId.isValid() ? lastInsertId.toInt() : -1);
+    return;
+  }
+
+  args.GetReturnValue().Set(-1);
 }
 
 }  // namespace bindings
