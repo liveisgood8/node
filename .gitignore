@@ -58,6 +58,8 @@ _UpgradeReport_Files/
 *.VC.*
 *.wixobj
 /tools/msvs/genfiles/
+/tools/runner/NodeRun/Debug
+/tools/runner/NodeRun/Release
 /npm.wxs
 # Exclude MSVS files used for .msi file generation
 !tools/msvs/msi/custom_actions.vcxproj
