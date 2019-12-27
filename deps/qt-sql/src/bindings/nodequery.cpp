@@ -2,11 +2,12 @@
 
 #include <QDateTime>
 #include <QVariant>
+#include <QtSql/QSqlDriver>
 #include <QtSql/QSqlError>
 #include <QtSql/QSqlQuery>
 #include <QtSql/QSqlRecord>
-#include <QtSql/QSqlDriver>
 
+#include "db/connection.h"
 #include "logger/easylogging++.h"
 
 namespace bindings {
@@ -79,7 +80,9 @@ bool validateTime(Isolate* isolate, int hours, int minutes, int seconds) {
   return true;
 }
 
-NodeQuery::NodeQuery() : innerQuery(std::make_unique<QSqlQuery>()) {}
+NodeQuery::NodeQuery()
+    : innerQuery(std::make_unique<QSqlQuery>(
+          QSqlDatabase::database(db::makeThreadLocalConnectionName()))) {}
 
 NodeQuery::~NodeQuery() {}
 
@@ -478,10 +481,11 @@ void NodeQuery::lastInsertId(const v8::FunctionCallbackInfo<v8::Value>& args) {
   auto isolate = args.GetIsolate();
   auto obj = ObjectWrap::Unwrap<NodeQuery>(args.Holder());
 
-  if (obj->query()->driver()->hasFeature(QSqlDriver::DriverFeature::LastInsertId))
-  {
+  if (obj->query()->driver()->hasFeature(
+          QSqlDriver::DriverFeature::LastInsertId)) {
     const auto lastInsertId = obj->query()->lastInsertId();
-    args.GetReturnValue().Set(lastInsertId.isValid() ? lastInsertId.toInt() : -1);
+    args.GetReturnValue().Set(lastInsertId.isValid() ? lastInsertId.toInt()
+                                                     : -1);
 
     return;
   }

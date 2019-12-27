@@ -1,5 +1,7 @@
 #include "nodeqtsql.h"
 
+#include <thread>
+
 #include <QCoreApplication>
 #include <QtPlugin>
 
@@ -12,7 +14,6 @@
 #include "db/oledbconnectionparser.h"
 #include "exception.h"
 
-
 Q_IMPORT_PLUGIN(QODBCDriverPlugin);
 Q_IMPORT_PLUGIN(QOCIDriverPlugin);
 
@@ -24,6 +25,8 @@ using v8::Local;
 using v8::Object;
 using v8::String;
 using v8::Value;
+
+static bool isApplicationInit = false;
 
 void qtMessageHandler(QtMsgType type,
                       const QMessageLogContext& context,
@@ -64,14 +67,19 @@ db::OleDbConnectionParser makeOleDbParser() {
 }
 
 void createCoreApplication() {
-  int argc = 0;
-  static QCoreApplication application(argc, nullptr);
+  if (!isApplicationInit)
+  {
+    int argc = 0;
+    static QCoreApplication application(argc, nullptr);
 
-  qInstallMessageHandler(qtMessageHandler);
+    qInstallMessageHandler(qtMessageHandler);
+
+    isApplicationInit = true;
+  }
 }
 
 bool openConnection() {
-  if (QSqlDatabase::database().isOpen()) {
+  if (QSqlDatabase::database(db::makeThreadLocalConnectionName()).isOpen()) {
     return true;
   }
 

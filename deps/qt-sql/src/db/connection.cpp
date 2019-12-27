@@ -1,5 +1,7 @@
 #include "connection.h"
 
+#include <thread>
+
 #include <QtSql/QSqlError>
 
 #include "exception.h"
@@ -17,6 +19,13 @@ void openEx(QSqlDatabase &db)
     {
         throw AppException(db.lastError().text());
     }
+}
+
+QString makeThreadLocalConnectionName() {
+  auto currentThreadHash =
+      std::hash<std::thread::id>{}(std::this_thread::get_id());
+
+  return QString::number(currentThreadHash) + "_database";
 }
 
 QSqlDatabase toAccess(const QString &path,
