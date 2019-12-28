@@ -421,6 +421,10 @@ MaybeLocal<Value> StartMainThreadExecution(Environment* env) {
     return StartExecution(env, "internal/main/eval_string");
   }
 
+  if (env->options()->eval_lis_task_id != 0 && !env->options()->force_repl) {
+    return StartExecution(env, "internal/main/eval_lis_task_by_id");
+  }
+
   if (env->options()->syntax_check_only) {
     return StartExecution(env, "internal/main/check_syntax");
   }

@@ -138,6 +138,10 @@ void EnvironmentOptions::CheckOptions(std::vector<std::string>* errors) {
     errors->push_back("either --check or --eval can be used, not both");
   }
 
+  if (syntax_check_only && eval_lis_task_id != 0) {
+    errors->push_back("either --check or --eval-lis-task can be used, not both");
+  }
+
   if (!unhandled_rejections.empty() &&
       unhandled_rejections != "strict" &&
       unhandled_rejections != "warn" &&
@@ -486,6 +490,7 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
   AddOption("[has_eval_string]", "", &EnvironmentOptions::has_eval_string);
   AddOption("--eval", "evaluate script", &EnvironmentOptions::eval_string);
   AddOption("--input-args", "set input aruments for script", &EnvironmentOptions::input_args_json);
+  AddOption("--eval-lis-task", "evaluate lis task from database by id", &EnvironmentOptions::eval_lis_task_id);
   AddOption("--lis-user-id", "set lis user id", &EnvironmentOptions::lis_user_id);
   Implies("--eval", "[has_eval_string]");
   AddOption("--print",

@@ -152,6 +152,7 @@ class EnvironmentOptions : public Options {
   bool experimental_report = false;
 #endif  //  NODE_REPORT
   std::string eval_string;
+  uint64_t eval_lis_task_id = 0;
   bool print_eval = false;
   bool force_repl = false;
 
