@@ -928,6 +928,7 @@ void TriggerUncaughtException(Isolate* isolate,
   if (!fatal_exception_function->IsFunction()) {
     ReportFatalException(
         env, error, message, EnhanceFatalException::kDontEnhance);
+    env->Exit(6);
     return;
   }
 
@@ -969,6 +970,17 @@ void TriggerUncaughtException(Isolate* isolate,
   // Now we are certain that the exception is fatal.
   ReportFatalException(env, error, message, EnhanceFatalException::kEnhance);
   RunAtExit(env);
+  
+  // If the global uncaught exception handler sets process.exitCode,
+  // exit with that code. Otherwise, exit with 1.
+  Local<String> exit_code = env->exit_code_string();
+  Local<Value> code;
+  if (process_object->Get(env->context(), exit_code).ToLocal(&code) &&
+      code->IsInt32()) {
+    env->Exit(code.As<Int32>()->Value());
+  } else {
+    env->Exit(1);
+  }
 }
 
 void TriggerUncaughtException(Isolate* isolate, const v8::TryCatch& try_catch) {

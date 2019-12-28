@@ -923,7 +923,8 @@ void Environment::Exit(int exit_code) {
   if (is_main_thread()) {
     stop_sub_worker_contexts();
     DisposePlatform();
-    exit(exit_code);
+    throw std::runtime_error("Node crashed with exited code: " +
+                             std::to_string(exit_code));
   } else {
     worker_context_->Exit(exit_code);
   }
