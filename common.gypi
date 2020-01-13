@@ -224,7 +224,7 @@
       'VCCLCompilerTool': {
         'BufferSecurityCheck': 'true',
         'DebugInformationFormat': 1,          # /Z7 embed info in .obj files
-        'ExceptionHandling': 0,               # /EHsc
+        'ExceptionHandling': 1,               # /EHsc
         'MultiProcessorCompilation': 'true',
         'StringPooling': 'true',              # pool string literals
         'SuppressStartupBanner': 'true',
@@ -324,7 +324,6 @@
           # POSIX names
           '_CRT_NONSTDC_NO_DEPRECATE',
           # Make sure the STL doesn't try to use exceptions
-          '_HAS_EXCEPTIONS=0',
           'BUILDING_V8_SHARED=1',
           'BUILDING_UV_SHARED=1',
         ],
