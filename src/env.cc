@@ -922,7 +922,6 @@ uv_key_t Environment::thread_local_env = {};
 void Environment::Exit(int exit_code) {
   if (is_main_thread()) {
     stop_sub_worker_contexts();
-    DisposePlatform();
     throw std::runtime_error("Node crashed with exited code: " +
                              std::to_string(exit_code));
   } else {
