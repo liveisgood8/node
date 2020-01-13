@@ -8157,6 +8157,11 @@ void Isolate::CancelTerminateExecution() {
   isolate->CancelTerminateExecution();
 }
 
+void Isolate::ClearPendingException() {
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
+  if (isolate->has_pending_exception()) isolate->clear_pending_exception();
+}
+
 void Isolate::RequestInterrupt(InterruptCallback callback, void* data) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
   isolate->RequestInterrupt(callback, data);
