@@ -23,16 +23,15 @@
 #include <iostream>
 #include <sstream>
 
-#include "node.h"
 #include "easylogging++.h"
-
+#include "node.h"
 
 constexpr int kExceptionExitCode = 500;
 
 extern "C" NODE_EXTERN int __stdcall MainStart(int argc, char* argv[]) {
   try {
     return node::Start(argc, argv);
-  } catch (const std::exception &err) {
+  } catch (const std::exception& err) {
     LOG(ERROR) << err.what();
     return kExceptionExitCode;
   }
@@ -47,7 +46,7 @@ extern "C" NODE_EXTERN int __stdcall Eval(const char* script,
                                           bool isDebug) {
   try {
     return node::EvalScript(script, inputArgsJson, isDebug);
-  } catch (const std::exception &err) {
+  } catch (const std::exception& err) {
     LOG(ERROR) << err.what();
     return kExceptionExitCode;
   }

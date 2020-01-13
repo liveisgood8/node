@@ -144,77 +144,93 @@ int NodeMainInstance::Run() {
   CHECK_NOT_NULL(env_);
   Context::Scope context_scope(env_->context());
 
-  if (exit_code == 0) {
-    {
-      InternalCallbackScope callback_scope(
-          env_.get(),
-          Local<Object>(),
-          { 1, 0 },
-          InternalCallbackScope::kAllowEmptyResource |
-              InternalCallbackScope::kSkipAsyncHooks);
-      LoadEnvironment(env_.get());
-    }
-
-    env_->set_trace_sync_io(env_->options()->trace_sync_io);
-
-    {
-      SealHandleScope seal(isolate_);
-      bool more;
-      env_->performance_state()->Mark(
-          node::performance::NODE_PERFORMANCE_MILESTONE_LOOP_START);
-      do {
-        uv_run(env_->event_loop(), UV_RUN_DEFAULT);
-
-        per_process::v8_platform.DrainVMTasks(isolate_);
-
-        more = uv_loop_alive(env_->event_loop());
-        if (more && !env_->is_stopping()) continue;
-
-        if (!uv_loop_alive(env_->event_loop())) {
-          EmitBeforeExit(env_.get());
-        }
-
-        // Emit `beforeExit` if the loop became alive either after emitting
-        // event, or after running some callbacks.
-        more = uv_loop_alive(env_->event_loop());
-      } while (more == true && !env_->is_stopping());
-      env_->performance_state()->Mark(
-          node::performance::NODE_PERFORMANCE_MILESTONE_LOOP_EXIT);
-    }
-
-    env_->set_trace_sync_io(false);
-    exit_code = EmitExit(env_.get());
-  }
-
-  env_->set_can_call_into_js(false);
-  env_->stop_sub_worker_contexts();
-  ResetStdio();
-  env_->RunCleanup();
-
-  // TODO(addaleax): Neither NODE_SHARED_MODE nor HAVE_INSPECTOR really
-  // make sense here.
 #if HAVE_INSPECTOR && defined(__POSIX__) && !defined(NODE_SHARED_MODE)
-  struct sigaction act;
-  memset(&act, 0, sizeof(act));
-  for (unsigned nr = 1; nr < kMaxSignal; nr += 1) {
-    if (nr == SIGKILL || nr == SIGSTOP || nr == SIGPROF)
-      continue;
-    act.sa_handler = (nr == SIGPIPE) ? SIG_IGN : SIG_DFL;
-    CHECK_EQ(0, sigaction(nr, &act, nullptr));
-  }
+#define CLEAN_UP()                                                             \
+  env_->set_can_call_into_js(false);                                           \
+  env_->stop_sub_worker_contexts();                                            \
+  ResetStdio();                                                                \
+  env_->RunCleanup();                                                          \
+  struct sigaction act;                                                        \
+  memset(&act, 0, sizeof(act));                                                \
+  for (unsigned nr = 1; nr < kMaxSignal; nr += 1) {                            \
+    if (nr == SIGKILL || nr == SIGSTOP || nr == SIGPROF) continue;             \
+    act.sa_handler = (nr == SIGPIPE) ? SIG_IGN : SIG_DFL;                      \
+    CHECK_EQ(0, sigaction(nr, &act, nullptr));                                 \
+  }                                                                            \
+  RunAtExit(env_.get());                                                       \
+  per_process::v8_platform.DrainVMTasks(isolate_);
+#else
+#define CLEAN_UP()                                                             \
+  env_->set_can_call_into_js(false);                                           \
+  env_->stop_sub_worker_contexts();                                            \
+  ResetStdio();                                                                \
+  env_->RunCleanup();                                                          \
+  RunAtExit(env_.get());                                                       \
+  per_process::v8_platform.DrainVMTasks(isolate_);
 #endif
 
-  RunAtExit(env_.get());
+  try {
+    if (exit_code == 0) {
+      {
+        InternalCallbackScope callback_scope(
+            env_.get(),
+            Local<Object>(),
+            {1, 0},
+            InternalCallbackScope::kAllowEmptyResource |
+                InternalCallbackScope::kSkipAsyncHooks);
+        LoadEnvironment(env_.get());
+      }
 
-  per_process::v8_platform.DrainVMTasks(isolate_);
+      env_->set_trace_sync_io(env_->options()->trace_sync_io);
+
+      {
+        SealHandleScope seal(isolate_);
+        bool more;
+        env_->performance_state()->Mark(
+            node::performance::NODE_PERFORMANCE_MILESTONE_LOOP_START);
+        do {
+          uv_run(env_->event_loop(), UV_RUN_DEFAULT);
+
+          per_process::v8_platform.DrainVMTasks(isolate_);
+
+          more = uv_loop_alive(env_->event_loop());
+          if (more && !env_->is_stopping()) continue;
+
+          if (!uv_loop_alive(env_->event_loop())) {
+            EmitBeforeExit(env_.get());
+          }
+
+          // Emit `beforeExit` if the loop became alive either after emitting
+          // event, or after running some callbacks.
+          more = uv_loop_alive(env_->event_loop());
+        } while (more == true && !env_->is_stopping());
+        env_->performance_state()->Mark(
+            node::performance::NODE_PERFORMANCE_MILESTONE_LOOP_EXIT);
+      }
+
+      env_->set_trace_sync_io(false);
+      exit_code = EmitExit(env_.get());
+    }
+
+    CLEAN_UP();
+
+  #if defined(LEAK_SANITIZER)
+    __lsan_do_leak_check();
+  #endif
+
+    return exit_code;
+  } catch (const std::exception& err) {
+    CLEAN_UP();
+
+    isolate_->ClearPendingException();
 
 #if defined(LEAK_SANITIZER)
-  __lsan_do_leak_check();
+    __lsan_do_leak_check();
 #endif
 
-  return exit_code;
+    throw err;
+  }
 }
-
 
 // TODO(joyeecheung): align this with the CreateEnvironment exposed in node.h
 // and the environment creation routine in workers somehow.
