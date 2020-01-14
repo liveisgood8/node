@@ -138,12 +138,6 @@ int NodeMainInstance::Run() {
   Isolate::Scope isolate_scope(isolate_);
   HandleScope handle_scope(isolate_);
 
-  int exit_code = 0;
-  auto env_ = CreateMainEnvironment(&exit_code);
-
-  CHECK_NOT_NULL(env_);
-  Context::Scope context_scope(env_->context());
-
 #if HAVE_INSPECTOR && defined(__POSIX__) && !defined(NODE_SHARED_MODE)
 #define CLEAN_UP()                                                             \
   env_->set_can_call_into_js(false);                                           \
@@ -169,7 +163,13 @@ int NodeMainInstance::Run() {
   per_process::v8_platform.DrainVMTasks(isolate_);
 #endif
 
+  int exit_code = 0;
+  auto env_ = CreateMainEnvironment(&exit_code);
+
   try {
+    CHECK_NOT_NULL(env_);
+    Context::Scope context_scope(env_->context());
+
     if (exit_code == 0) {
       {
         InternalCallbackScope callback_scope(
@@ -214,9 +214,9 @@ int NodeMainInstance::Run() {
 
     CLEAN_UP();
 
-  #if defined(LEAK_SANITIZER)
+#if defined(LEAK_SANITIZER)
     __lsan_do_leak_check();
-  #endif
+#endif
 
     return exit_code;
   } catch (const std::exception& err) {
@@ -228,7 +228,7 @@ int NodeMainInstance::Run() {
     __lsan_do_leak_check();
 #endif
 
-    throw err;
+    throw;
   }
 }
 
@@ -291,7 +291,12 @@ std::unique_ptr<Environment> NodeMainInstance::CreateMainEnvironment(
   // TODO(joyeecheung): when we snapshot the bootstrapped context,
   // the inspector and diagnostics setup should after after deserialization.
 #if HAVE_INSPECTOR
-  *exit_code = env_->InitializeInspector({});
+  if (isInspectorEnabled ||
+      env_->options()->get_debug_options()->inspector_enabled ||
+      env_->options()->get_debug_options()->break_first_line ||
+      env_->options()->get_debug_options()->break_node_first_line) {
+    *exit_code = env_->InitializeInspector({});
+  }
 #endif
   if (*exit_code != 0) {
     return env_;
