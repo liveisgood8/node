@@ -237,14 +237,14 @@ void AppendExceptionLine(Environment* env,
             .FromMaybe(false));
 }
 
-[[noreturn]] void Abort() {
+void Abort() {
   DumpBacktrace(stderr);
   fflush(stderr);
 
   throw std::runtime_error("FATAL ERROR");
 }
 
-    [[noreturn]] void Assert(const AssertionInfo& info) {
+void Assert(const AssertionInfo& info) {
   char name[1024];
   GetHumanReadableProcessName(&name);
 
@@ -257,6 +257,19 @@ void AppendExceptionLine(Environment* env,
   std::cerr << errorString;
 
   throw std::runtime_error(errorString.c_str());
+}
+
+[[noreturn]] void AssertNoReturn(const AssertionInfo& info) {
+  char name[1024];
+  GetHumanReadableProcessName(&name);
+
+  std::ostringstream stream;
+  stream << name << ": " << info.file_line << ":" << info.function
+         << (*info.function ? ":" : "") << " Assertion `" << info.message
+         << "' failed.\n";
+
+  const std::string errorString = stream.str();
+  std::cerr << errorString;
 }
 
 enum class EnhanceFatalException { kEnhance, kDontEnhance };

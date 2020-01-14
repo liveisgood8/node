@@ -109,8 +109,9 @@ struct AssertionInfo {
   const char* message;
   const char* function;
 };
-[[noreturn]] void Assert(const AssertionInfo& info);
-[[noreturn]] void Abort();
+void Assert(const AssertionInfo& info);
+[[noreturn]] void AssertNoReturn(const AssertionInfo& info);
+void Abort();
 void DumpBacktrace(FILE* fp);
 
 // Windows 8+ does not like abort() in Release mode
@@ -130,6 +131,15 @@ void DumpBacktrace(FILE* fp);
       __FILE__ ":" STRINGIFY(__LINE__), #expr, PRETTY_FUNCTION_NAME           \
     };                                                                        \
     node::Assert(args);                                                       \
+  } while (0)
+
+#define ERROR_AND_ABORT_NORETURN(expr)                                         \
+  do {                                                                         \
+    /* Make sure that this struct does not end up in inline code, but      */  \
+    /* rather in a read-only data section when modifying this code.        */  \
+    static const node::AssertionInfo args = {                                  \
+        __FILE__ ":" STRINGIFY(__LINE__), #expr, PRETTY_FUNCTION_NAME};        \
+    node::AssertNoReturn(args);                                                \
   } while (0)
 
 #ifdef __GNUC__
@@ -187,8 +197,8 @@ void DumpBacktrace(FILE* fp);
 #endif
 
 
-#define UNREACHABLE(...)                                                      \
-  ERROR_AND_ABORT("Unreachable code reached" __VA_OPT__(": ") __VA_ARGS__)
+#define UNREACHABLE(...)                                                           \
+  ERROR_AND_ABORT_NORETURN("Unreachable code reached" __VA_OPT__(": ") __VA_ARGS__)
 
 // ECMA262 20.1.2.6 Number.MAX_SAFE_INTEGER (2^53-1)
 constexpr int64_t kMaxSafeJsInteger = 9007199254740991;
