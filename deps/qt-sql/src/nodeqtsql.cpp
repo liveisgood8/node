@@ -58,7 +58,10 @@ void qtMessageHandler(QtMsgType type,
 }
 
 db::OleDbConnectionParser makeOleDbParser() {
-  const auto connectionString = db::registryConnectionString();
+  auto connectionString = db::environmentConnectionString();
+  if (connectionString.isEmpty()) {
+    connectionString = db::registryConnectionString();
+  }
 
   return db::OleDbConnectionParser(connectionString);
 }

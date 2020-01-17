@@ -3,11 +3,11 @@
 
 #include <QString>
 
-
 namespace db {
 
+QString environmentConnectionString();
 QString registryConnectionString();
 
-} // namespace db
+}  // namespace db
 
-#endif // CONNECTION_SOURCES_H
+#endif  // CONNECTION_SOURCES_H
