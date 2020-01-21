@@ -62,7 +62,6 @@
       'lib/module.js',
       'lib/net.js',
       'lib/os.js',
-      'lib/message.js',
       'lib/path.js',
       'lib/perf_hooks.js',
       'lib/process.js',

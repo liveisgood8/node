@@ -1,0 +1,1 @@
+.\vcbuild.bat static small-icu nonpm noetw x86 link-module lib/message.js
