@@ -619,6 +619,14 @@ inline void PlatformInit() {
 #endif  // _WIN32
 }
 
+NODE_EXTERN bool IsInspectorSupported() {
+#ifdef HAVE_INSPECTOR
+  return true;
+#else
+  return false;
+#endif
+}
+
 NODE_EXTERN void TearDown() {
   TearDownOncePerProcess();
 }
@@ -654,8 +662,8 @@ NODE_EXTERN void InitializeLogger() {
                                      "%datetime %level [%logger]: %func %msg");
 
   if (per_process::cli_options->is_logger_stdout_disabled) {
-    el::Loggers::reconfigureAllLoggers(
-      el::ConfigurationType::ToStandardOutput, "false");
+    el::Loggers::reconfigureAllLoggers(el::ConfigurationType::ToStandardOutput,
+                                       "false");
   } else {
     el::Loggers::reconfigureAllLoggers(
         el::Level::Error, el::ConfigurationType::ToStandardOutput, "false");

@@ -230,6 +230,8 @@ NODE_EXTERN void Init(int* argc,
                       int* exec_argc,
                       const char*** exec_argv);
 
+NODE_EXTERN bool IsInspectorSupported();
+
 NODE_EXTERN void TearDown();
 
 NODE_EXTERN void InitializeLogger();

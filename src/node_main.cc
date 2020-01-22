@@ -57,7 +57,7 @@ extern "C" NODE_EXTERN void __stdcall TearDown() {
 }
 
 extern "C" NODE_EXTERN bool __stdcall IsInspectorSupported() {
-  return false;
+  return node::IsInspectorSupported();
 }
 
 std::stringstream errorStreamBuffer;
