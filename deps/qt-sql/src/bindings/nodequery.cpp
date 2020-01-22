@@ -4,6 +4,7 @@
 #include <QVariant>
 #include <QtSql/QSqlError>
 #include <QtSql/QSqlQuery>
+#include <QtSql/QSqlField>
 #include <QtSql/QSqlRecord>
 #include <QtSql/QSqlDriver>
 
@@ -15,6 +16,7 @@ using v8::Array;
 using v8::BigInt;
 using v8::Context;
 using v8::Date;
+using v8::Boolean;
 using v8::Exception;
 using v8::Function;
 using v8::FunctionCallbackInfo;
@@ -79,6 +81,33 @@ bool validateTime(Isolate* isolate, int hours, int minutes, int seconds) {
   return true;
 }
 
+QString defineFieldType(const QSqlField& field) {
+  const auto type = field.type();
+  switch (type) {
+    case QVariant::Type::Int:
+    case QVariant::Type::UInt:
+    case QVariant::Type::LongLong:
+    case QVariant::Type::ULongLong:
+      return "integer";
+    case QVariant::Type::Double:
+      return "double";
+    case QVariant::Type::String:
+    case QVariant::Type::Char:
+      return "string";
+    case QVariant::Type::DateTime:
+      return "datetime";
+    case QVariant::Type::Date:
+      return "date";
+    case QVariant::Type::Time:
+      return "time";
+    case QVariant::Type::ByteArray:
+    case QVariant::Type::BitArray:
+      return "blob";
+  }
+
+  return "none";
+}
+
 NodeQuery::NodeQuery() : innerQuery(std::make_unique<QSqlQuery>()) {}
 
 NodeQuery::~NodeQuery() {}
@@ -104,6 +133,7 @@ void NodeQuery::init(Local<Object> exports) {
 
   NODE_SET_PROTOTYPE_METHOD(tpl, "recordCount", &recordCount);
   NODE_SET_PROTOTYPE_METHOD(tpl, "fieldsCount", &fieldsCount);
+  NODE_SET_PROTOTYPE_METHOD(tpl, "fieldsInfo", &fieldsInfo);
   NODE_SET_PROTOTYPE_METHOD(tpl, "numRowsAffected", &numRowsAffected);
   NODE_SET_PROTOTYPE_METHOD(tpl, "lastInsertId", &lastInsertId);
 
@@ -111,6 +141,7 @@ void NodeQuery::init(Local<Object> exports) {
   NODE_SET_PROTOTYPE_METHOD(tpl, "addDateParameter", &addDateParameter);
   NODE_SET_PROTOTYPE_METHOD(tpl, "addTimeParameter", &addTimeParameter);
   NODE_SET_PROTOTYPE_METHOD(tpl, "fieldValue", &fieldValue);
+
 
   NODE_SET_PROTOTYPE_METHOD(tpl, "lastError", &lastError);
 
@@ -487,6 +518,53 @@ void NodeQuery::lastInsertId(const v8::FunctionCallbackInfo<v8::Value>& args) {
   }
 
   args.GetReturnValue().Set(-1);
+}
+
+void NodeQuery::fieldsInfo(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  auto isolate = args.GetIsolate();
+  auto context = isolate->GetCurrentContext();
+
+  auto obj = ObjectWrap::Unwrap<NodeQuery>(args.Holder());
+  const auto record = obj->query()->record();
+
+  auto fieldsArray = Array::New(isolate, record.count());
+
+  for (int i = 0; i < record.count(); i++) {
+    const auto field = record.field(i);
+
+    auto fieldObject = Object::New(isolate);
+    fieldObject->Set(
+        context,
+        String::NewFromUtf8(isolate, "name").ToLocalChecked(),
+        String::NewFromUtf8(isolate, field.name().toUtf8().constData())
+            .ToLocalChecked());
+    fieldObject->Set(
+        context,
+        String::NewFromUtf8(isolate, "isGenerated").ToLocalChecked(),
+        Boolean::New(isolate, field.isGenerated()));
+    fieldObject->Set(
+        context,
+        String::NewFromUtf8(isolate, "length").ToLocalChecked(),
+        Boolean::New(isolate, field.length()));
+    fieldObject->Set(context,
+                     String::NewFromUtf8(isolate, "length").ToLocalChecked(),
+                     Boolean::New(isolate, field.length()));
+
+    const auto fieldType = defineFieldType(field);
+    if (fieldType == "none") {
+      fieldObject->Set(context,
+                       String::NewFromUtf8(isolate, "type").ToLocalChecked(),
+                       Null(isolate));
+    } else {
+      fieldObject->Set(context,
+                       String::NewFromUtf8(isolate, "type").ToLocalChecked(),
+                       String::NewFromUtf8(isolate, fieldType.toUtf8().constData()).ToLocalChecked());
+    }
+
+    fieldsArray->Set(context, i, fieldObject);
+  }
+
+  args.GetReturnValue().Set(fieldsArray);
 }
 
 }  // namespace bindings

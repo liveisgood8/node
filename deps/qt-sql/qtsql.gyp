@@ -5,6 +5,7 @@
       'type': 'static_library',
       'sources': [ 
         'src/bindings/nodequery.cpp', 
+        'src/bindings/databaseinfo.cpp', 
         'src/db/connection.cpp', 
         'src/db/connection_sources.cpp', 
         'src/db/oledbconnectionparser.cpp', 

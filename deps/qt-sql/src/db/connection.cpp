@@ -11,6 +11,8 @@
 
 namespace db {
 
+Type databaseType = Type::None;
+
 void openEx(QSqlDatabase &db)
 {
     if (!db.open())
@@ -32,6 +34,7 @@ QSqlDatabase toAccess(const QString &path,
 
     openEx(db);
 
+    databaseType = Type::Access;
     return db;
 }
 
@@ -54,6 +57,7 @@ QSqlDatabase toMssql(const QString &server, const QString &login, const QString 
 
     openEx(db);
 
+    databaseType = Type::Mssql;
     return db;
 }
 
@@ -71,7 +75,12 @@ QSqlDatabase toOracleByTns(const QString &server, const QString &login, const QS
 
     openEx(db);
 
+    databaseType = Type::Oracle;
     return db;
+}
+
+Type type() {
+  return databaseType;
 }
 
 QSqlDatabase byOleDbConnectionParser(const OleDbConnectionParser &oleParser,

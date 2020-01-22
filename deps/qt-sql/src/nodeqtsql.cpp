@@ -7,6 +7,7 @@
 #include <node.h>
 
 #include "bindings/nodequery.h"
+#include "bindings/databaseinfo.h"
 #include "db/connection.h"
 #include "db/connection_sources.h"
 #include "db/oledbconnectionparser.h"
@@ -109,6 +110,7 @@ void initAll(Local<Object> exports) {
   NODE_SET_METHOD(exports, "openConnection", &jsOpenConnection);
   NODE_SET_METHOD(exports, "closeConnection", &jsCloseConnection);
   bindings::NodeQuery::init(exports);
+  bindings::NodeDatabaseInfo::init(exports);
 }
 
 NODE_MODULE(NODE_GYP_MODULE_NAME, initAll)

@@ -41,6 +41,8 @@ private:
     static void addTimeParameter(const v8::FunctionCallbackInfo<v8::Value> &args);
     static void fieldValue(const v8::FunctionCallbackInfo<v8::Value> &args);
 
+    static void fieldsInfo(const v8::FunctionCallbackInfo<v8::Value>& args);
+
 
     static void lastError(const v8::FunctionCallbackInfo<v8::Value> &args);
 

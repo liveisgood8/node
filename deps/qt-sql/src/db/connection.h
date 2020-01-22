@@ -8,6 +8,14 @@
 
 namespace db {
 
+enum Type
+{
+  None,
+  Access,
+  Mssql,
+  Oracle
+};
+
 QSqlDatabase byOleDbConnectionParser(const OleDbConnectionParser &oleParser,
                                      const QString &connName = QLatin1String(QSqlDatabase::defaultConnection));
 QSqlDatabase toAccess(const QString &path,
@@ -16,6 +24,8 @@ QSqlDatabase toMssql(const QString &server, const QString &login, const QString 
                      const QString &connName = QLatin1String(QSqlDatabase::defaultConnection));
 QSqlDatabase toOracleByTns(const QString &server, const QString &login, const QString &pass,
                            const QString &connName = QLatin1String(QSqlDatabase::defaultConnection));
+
+Type type();
 
 } // namespace db
 
