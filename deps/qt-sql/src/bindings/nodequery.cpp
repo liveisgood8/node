@@ -2,11 +2,11 @@
 
 #include <QDateTime>
 #include <QVariant>
-#include <QtSql/QSqlError>
-#include <QtSql/QSqlQuery>
-#include <QtSql/QSqlField>
-#include <QtSql/QSqlRecord>
 #include <QtSql/QSqlDriver>
+#include <QtSql/QSqlError>
+#include <QtSql/QSqlField>
+#include <QtSql/QSqlQuery>
+#include <QtSql/QSqlRecord>
 
 #include "logger/easylogging++.h"
 
@@ -14,9 +14,9 @@ namespace bindings {
 
 using v8::Array;
 using v8::BigInt;
+using v8::Boolean;
 using v8::Context;
 using v8::Date;
-using v8::Boolean;
 using v8::Exception;
 using v8::Function;
 using v8::FunctionCallbackInfo;
@@ -141,7 +141,6 @@ void NodeQuery::init(Local<Object> exports) {
   NODE_SET_PROTOTYPE_METHOD(tpl, "addDateParameter", &addDateParameter);
   NODE_SET_PROTOTYPE_METHOD(tpl, "addTimeParameter", &addTimeParameter);
   NODE_SET_PROTOTYPE_METHOD(tpl, "fieldValue", &fieldValue);
-
 
   NODE_SET_PROTOTYPE_METHOD(tpl, "lastError", &lastError);
 
@@ -468,6 +467,9 @@ void NodeQuery::fieldValue(const v8::FunctionCallbackInfo<v8::Value>& args) {
     args.GetReturnValue().Set(string.ToLocalChecked());
   } else if (valueType == QVariant::DateTime) {
     auto dt = value.toDateTime();
+    if (dt.date().year() < 1970) {
+      dt.setDate(QDate(1970, 1, 1));
+    }
     auto msSinceEpoch = dt.toMSecsSinceEpoch();
 
     auto date = Date::New(context, static_cast<double>(msSinceEpoch));
@@ -509,10 +511,11 @@ void NodeQuery::lastInsertId(const v8::FunctionCallbackInfo<v8::Value>& args) {
   auto isolate = args.GetIsolate();
   auto obj = ObjectWrap::Unwrap<NodeQuery>(args.Holder());
 
-  if (obj->query()->driver()->hasFeature(QSqlDriver::DriverFeature::LastInsertId))
-  {
+  if (obj->query()->driver()->hasFeature(
+          QSqlDriver::DriverFeature::LastInsertId)) {
     const auto lastInsertId = obj->query()->lastInsertId();
-    args.GetReturnValue().Set(lastInsertId.isValid() ? lastInsertId.toInt() : -1);
+    args.GetReturnValue().Set(lastInsertId.isValid() ? lastInsertId.toInt()
+                                                     : -1);
 
     return;
   }
@@ -542,10 +545,9 @@ void NodeQuery::fieldsInfo(const v8::FunctionCallbackInfo<v8::Value>& args) {
         context,
         String::NewFromUtf8(isolate, "isGenerated").ToLocalChecked(),
         Boolean::New(isolate, field.isGenerated()));
-    fieldObject->Set(
-        context,
-        String::NewFromUtf8(isolate, "length").ToLocalChecked(),
-        Boolean::New(isolate, field.length()));
+    fieldObject->Set(context,
+                     String::NewFromUtf8(isolate, "length").ToLocalChecked(),
+                     Boolean::New(isolate, field.length()));
     fieldObject->Set(context,
                      String::NewFromUtf8(isolate, "length").ToLocalChecked(),
                      Boolean::New(isolate, field.length()));
@@ -556,9 +558,11 @@ void NodeQuery::fieldsInfo(const v8::FunctionCallbackInfo<v8::Value>& args) {
                        String::NewFromUtf8(isolate, "type").ToLocalChecked(),
                        Null(isolate));
     } else {
-      fieldObject->Set(context,
-                       String::NewFromUtf8(isolate, "type").ToLocalChecked(),
-                       String::NewFromUtf8(isolate, fieldType.toUtf8().constData()).ToLocalChecked());
+      fieldObject->Set(
+          context,
+          String::NewFromUtf8(isolate, "type").ToLocalChecked(),
+          String::NewFromUtf8(isolate, fieldType.toUtf8().constData())
+              .ToLocalChecked());
     }
 
     fieldsArray->Set(context, i, fieldObject);
