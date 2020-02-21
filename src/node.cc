@@ -880,17 +880,17 @@ void Init(int* argc,
 
   for (const std::string& error : errors)
     fprintf(stderr, "%s: %s\n", argv_.at(0).c_str(), error.c_str());
-  if (exit_code != 0) exit(exit_code);
+  if (exit_code != 0) throw NodeException(exit_code, "initialize with args error");
 
   if (per_process::cli_options->print_version) {
     printf("%s\n", NODE_VERSION);
-    exit(0);
+    ::exit(0);
   }
 
   if (per_process::cli_options->print_bash_completion) {
     std::string completion = options_parser::GetBashCompletion();
     printf("%s\n", completion.c_str());
-    exit(0);
+    ::exit(0);
   }
 
   if (per_process::cli_options->print_v8_help) {
@@ -966,7 +966,7 @@ InitializationResult InitializeOncePerProcess(int argc, char** argv) {
   if (per_process::cli_options->print_bash_completion) {
     std::string completion = options_parser::GetBashCompletion();
     printf("%s\n", completion.c_str());
-    exit(0);
+    ::exit(0);
   }
 
   if (per_process::cli_options->print_v8_help) {

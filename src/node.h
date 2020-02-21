@@ -904,6 +904,20 @@ class NODE_EXTERN AsyncResource {
   async_context async_context_;
 };
 
+class NODE_EXTERN NodeException : std::runtime_error
+{
+  public:
+    NodeException(int code, const char *message)
+      : std::runtime_error(message)
+      , code(code)
+    {
+
+    }
+
+  private:
+    int code;
+};
+
 #ifndef _WIN32
 // Register a signal handler without interrupting any handlers that node
 // itself needs. This does override handlers registered through
