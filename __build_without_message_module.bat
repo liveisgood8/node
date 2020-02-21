@@ -1,0 +1,1 @@
+.\vcbuild.bat nobuild static small-icu nonpm noetw x86
