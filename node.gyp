@@ -331,7 +331,9 @@
       ],
 
       'sources': [
-        'src/node_main.cc'
+        'src/node_main.cc',
+        'src/node_runner.cc',
+        'src/node_runner.h',
       ],
 
       'dependencies': [
