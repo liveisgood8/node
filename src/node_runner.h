@@ -2,22 +2,26 @@
 #define NODE_RUNNER_H_
 
 #include <memory>
+#include <vector>
 
-#include "node.h"
+namespace node {
+class Environment;
+class MultiIsolatePlatform;
+class MultiIsolatePlatform;
+class IsolateData;
+class ArrayBufferAllocator;
+}  // namespace node
 
-class NODE_EXTERN Runner {
- private:
-  struct SnapshotData {
-    v8::Isolate::CreateParams params;
-    const std::vector<size_t>* indexes = nullptr;
-    std::vector<intptr_t> externalReferences;
-  };
+namespace v8 {
+class Isolate;
+}  // namespace v8
 
-  struct NodeIsolate {
-    v8::Isolate* isolate = nullptr;
-    std::unique_ptr<node::IsolateData> isolateData;
-  };
+struct uv_loop_s;
 
+struct SnapshotData;
+struct NodeIsolate;
+
+class __declspec(dllexport) Runner final {
  public:
   Runner(const Runner&) = delete;
   Runner& operator=(const Runner&) = delete;
@@ -26,29 +30,32 @@ class NODE_EXTERN Runner {
 
   void SetDebugEnable(bool isEnabled);
 
-  void Init(int argc, const char** argv, int execArgc, const char** execArgv);
+  void Init(int argc, const char** argv);
 
   void RunScript(const char* script);
 
  private:
   Runner() = default;
+  ~Runner();
 
-  std::unique_ptr<node::Environment> CreateMainEnvironment();
-  SnapshotData GetSnapshot() const;
-  NodeIsolate GetNodeIsolate(uv_loop_s *eventLoop);
+  node::Environment* CreateMainEnvironment();
+  SnapshotData* GetSnapshot() const;
+  NodeIsolate* GetNodeIsolate(uv_loop_s* eventLoop);
 
-  void RunEnvironment(NodeIsolate *nodeIsolate, node::Environment* env) const;
+  void RunEnvironment(NodeIsolate* nodeIsolate, node::Environment* env) const;
 
  private:
-  SnapshotData snapshotData;
+  SnapshotData *snapshotData = nullptr;
   node::MultiIsolatePlatform* platform = nullptr;
-  std::shared_ptr<node::ArrayBufferAllocator> allocator;
-  NodeIsolate nodeIsolate;
-  std::unique_ptr<node::Environment> env;
+  node::ArrayBufferAllocator* allocator = nullptr;
+  NodeIsolate *nodeIsolate = nullptr;
+  node::Environment *env = nullptr;
 
   bool isDeserealizeMode = false;
 
   bool isDebug = false;
 };
+
+int __declspec(dllexport) RunNode(int argc, const char* argv[]);
 
 #endif  // NODE_RUNNER_H_

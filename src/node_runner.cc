@@ -1,5 +1,6 @@
 #include "node_runner.h"
 
+#include "node.h"
 #include "env.h"
 #include "node_internals.h"
 #include "node_main_instance.h"
@@ -7,6 +8,17 @@
 #include "node_v8_platform-inl.h"
 #include "uv.h"
 #include "v8.h"
+
+struct SnapshotData {
+  v8::Isolate::CreateParams params;
+  const std::vector<size_t>* indexes = nullptr;
+  std::vector<intptr_t> externalReferences;
+};
+
+struct NodeIsolate {
+  v8::Isolate* isolate = nullptr;
+  std::unique_ptr<node::IsolateData> isolateData;
+};
 
 Runner* Runner::GetInstance() {
   static Runner runner;
@@ -18,19 +30,18 @@ void Runner::SetDebugEnable(bool isEnabled) {
 }
 
 void Runner::Init(int argc,
-                  const char** argv,
-                  int execArgc,
-                  const char** execArgv) {
-  node::Init(&argc, argv, &execArgc, &execArgv);
-  snapshotData = GetSnapshot();
-  allocator.reset(node::CreateArrayBufferAllocator());
+                  const char** argv) {
+  //node::Init(&argc, argv, &execArgc, &execArgv);
+  node::InitializeOncePerProcess(argc, const_cast<char**>(argv));
+  allocator = node::CreateArrayBufferAllocator();
   // isolate = node::NewIsolate(allocator, uv_default_loop(), nullptr);
   // isolateData.reset(node::CreateIsolateData(isolate, uv_default_loop()));
 
-  snapshotData.params.array_buffer_allocator = allocator.get();
-  platform = node::per_process::v8_platform.Platform();
+  snapshotData = GetSnapshot();
+  snapshotData->params.array_buffer_allocator = allocator;
+  isDeserealizeMode = snapshotData->indexes != nullptr;
 
-  isDeserealizeMode = snapshotData.indexes != nullptr;
+  platform = node::per_process::v8_platform.Platform();
 
   nodeIsolate = GetNodeIsolate(uv_default_loop());
 }
@@ -39,27 +50,29 @@ void Runner::RunScript(const char* script) {
   auto env = CreateMainEnvironment();
   env->options()->eval_string = script;
 
-  RunEnvironment(&nodeIsolate, env.get());
+  RunEnvironment(nodeIsolate, env);
 }
 
-std::unique_ptr<node::Environment> Runner::CreateMainEnvironment() {
-  v8::HandleScope handle_scope(nodeIsolate.isolate);
+node::Environment* Runner::CreateMainEnvironment() {
+  v8::Locker locker(nodeIsolate->isolate);
+  v8::Isolate::Scope isolate_scope(nodeIsolate->isolate);
+  v8::HandleScope handle_scope(nodeIsolate->isolate);
 
-  if (nodeIsolate.isolateData->options()->track_heap_objects) {
-    nodeIsolate.isolate->GetHeapProfiler()->StartTrackingHeapObjects(true);
+  if (nodeIsolate->isolateData->options()->track_heap_objects) {
+    nodeIsolate->isolate->GetHeapProfiler()->StartTrackingHeapObjects(true);
   }
 
   v8::Local<v8::Context> context;
   if (isDeserealizeMode) {
     context =
-        v8::Context::FromSnapshot(nodeIsolate.isolate,
+        v8::Context::FromSnapshot(nodeIsolate->isolate,
                                   node::NodeMainInstance::kNodeContextIndex)
             .ToLocalChecked();
     node::InitializeContextRuntime(context);
     node::IsolateSettings s;
-    SetIsolateErrorHandlers(nodeIsolate.isolate, s);
+    SetIsolateErrorHandlers(nodeIsolate->isolate, s);
   } else {
-    context = node::NewContext(nodeIsolate.isolate);
+    context = node::NewContext(nodeIsolate->isolate);
   }
 
   CHECK(!context.IsEmpty());
@@ -68,8 +81,8 @@ std::unique_ptr<node::Environment> Runner::CreateMainEnvironment() {
   // TEMP
   const std::vector<std::string> argv;
   const std::vector<std::string> execArgv;
-  std::unique_ptr<node::Environment> env = std::make_unique<node::Environment>(
-      nodeIsolate.isolateData.get(),
+  auto env = new node::Environment(
+      nodeIsolate->isolateData.get(),
       context,
       argv,
       execArgv,
@@ -89,55 +102,55 @@ std::unique_ptr<node::Environment> Runner::CreateMainEnvironment() {
   return env;
 }
 
-Runner::SnapshotData Runner::GetSnapshot() const {
-  SnapshotData data;
+SnapshotData* Runner::GetSnapshot() const {
+  auto data = new SnapshotData();
   bool forceNoSnapshot =
       node::per_process::cli_options->per_isolate->no_node_snapshot;
   if (!forceNoSnapshot) {
     v8::StartupData* blob = node::NodeMainInstance::GetEmbeddedSnapshotBlob();
     if (blob != nullptr) {
-      data.externalReferences.push_back(reinterpret_cast<intptr_t>(nullptr));
-      data.params.external_references = data.externalReferences.data();
-      data.params.snapshot_blob = blob;
-      data.indexes = node::NodeMainInstance::GetIsolateDataIndexes();
+      data->externalReferences.push_back(reinterpret_cast<intptr_t>(nullptr));
+      data->params.external_references = data->externalReferences.data();
+      data->params.snapshot_blob = blob;
+      data->indexes = node::NodeMainInstance::GetIsolateDataIndexes();
     }
   }
   return data;
 }
 
-Runner::NodeIsolate Runner::GetNodeIsolate(uv_loop_s* eventLoop) {
-  NodeIsolate nodeIsolate;
+NodeIsolate* Runner::GetNodeIsolate(uv_loop_s* eventLoop) {
+  auto nodeIsolate = new NodeIsolate();
 
-  nodeIsolate.isolate = v8::Isolate::Allocate();
-  CHECK_NOT_NULL(nodeIsolate.isolate);
+  nodeIsolate->isolate = v8::Isolate::Allocate();
+  CHECK_NOT_NULL(nodeIsolate->isolate);
 
   // Register the isolate on the platform before the isolate gets initialized,
   // so that the isolate can access the platform during initialization.
-  platform->RegisterIsolate(nodeIsolate.isolate, uv_default_loop());
-  node::SetIsolateCreateParamsForNode(&snapshotData.params);
-  v8::Isolate::Initialize(nodeIsolate.isolate, snapshotData.params);
+  platform->RegisterIsolate(nodeIsolate->isolate, uv_default_loop());
+  node::SetIsolateCreateParamsForNode(&snapshotData->params);
+  v8::Isolate::Initialize(nodeIsolate->isolate, snapshotData->params);
 
   // If the indexes are not nullptr, we are not deserializing
   CHECK_IMPLIES(isDeserealizeMode,
-                snapshotData.params.external_references != nullptr);
+                snapshotData->params.external_references != nullptr);
 
-  nodeIsolate.isolateData =
-      std::make_unique<node::IsolateData>(nodeIsolate.isolate,
+  nodeIsolate->isolateData =
+      std::make_unique<node::IsolateData>(nodeIsolate->isolate,
                                           eventLoop,
                                           platform,
-                                          allocator.get(),
-                                          snapshotData.indexes);
+                                          allocator,
+                                          snapshotData->indexes);
   node::IsolateSettings s;
-  SetIsolateMiscHandlers(nodeIsolate.isolate, s);
+  SetIsolateMiscHandlers(nodeIsolate->isolate, s);
   if (!isDeserealizeMode) {
     // If in deserialize mode, delay until after the deserialization is
     // complete.
-    SetIsolateErrorHandlers(nodeIsolate.isolate, s);
+    SetIsolateErrorHandlers(nodeIsolate->isolate, s);
   }
   return nodeIsolate;
 }
 
-void Runner::RunEnvironment(Runner::NodeIsolate* nodeIsolate, node::Environment* env) const {
+void Runner::RunEnvironment(NodeIsolate* nodeIsolate, node::Environment* env) const {
   v8::Locker locker(nodeIsolate->isolate);
   v8::Isolate::Scope isolate_scope(nodeIsolate->isolate);
   v8::HandleScope handle_scope(nodeIsolate->isolate);
@@ -210,4 +223,16 @@ void Runner::RunEnvironment(Runner::NodeIsolate* nodeIsolate, node::Environment*
 #endif
 
   //return exit_code;
+}
+
+Runner::~Runner() {
+  delete env;
+  delete nodeIsolate;
+  delete platform;
+  delete allocator;
+  delete snapshotData;
+}
+
+int RunNode(int argc, const char* argv[]) {
+  return node::Start(argc, const_cast<char**>(argv));
 }
