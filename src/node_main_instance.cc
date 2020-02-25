@@ -34,6 +34,7 @@ NodeMainInstance::NodeMainInstance(Isolate* isolate,
       isolate_(isolate),
       platform_(platform),
       isolate_data_(nullptr),
+      event_loop(event_loop),
       owns_isolate_(false),
       deserialize_mode_(false) {
   isolate_data_ =
@@ -66,6 +67,7 @@ NodeMainInstance::NodeMainInstance(
       isolate_(nullptr),
       platform_(platform),
       isolate_data_(nullptr),
+      event_loop(event_loop),
       owns_isolate_(true) {
   params->array_buffer_allocator = array_buffer_allocator_.get();
   isolate_ = Isolate::Allocate();
@@ -111,8 +113,21 @@ NodeMainInstance::~NodeMainInstance() {
   // https://github.com/nodejs/node/issues/31752 -- V8 should not be posting
   // platform tasks during Dispose(), but it does in some WASM edge cases.
   isolate_->Exit();
+
+  bool platform_finished = false;
+
+  platform_->AddIsolateFinishedCallback(
+      isolate_,
+      [](void* data) { *static_cast<bool*>(data) = true; },
+      &platform_finished);
+
   isolate_->Dispose();
   platform_->UnregisterIsolate(isolate_);
+
+  DCHECK(event_loop);
+  while (!platform_finished) {
+    uv_run(event_loop, UV_RUN_ONCE);
+  }
 }
 
 int NodeMainInstance::Run(
@@ -256,7 +271,11 @@ std::unique_ptr<Environment> NodeMainInstance::CreateMainEnvironment(
   // TODO(joyeecheung): when we snapshot the bootstrapped context,
   // the inspector and diagnostics setup should after after deserialization.
 #if HAVE_INSPECTOR
-  *exit_code = env->InitializeInspector({});
+  if (env->options()->get_debug_options()->inspector_enabled ||
+      env->options()->get_debug_options()->break_first_line ||
+      env->options()->get_debug_options()->break_node_first_line) {
+    *exit_code = env->InitializeInspector({});
+  }
 #endif
   if (*exit_code != 0) {
     return env;

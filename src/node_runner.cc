@@ -32,28 +32,36 @@ void Runner::Init(int argc, const char** argv) {
 }
 
 void Runner::RunScript(const char* script) {
-  NodeMainInstance main_instance(&snapshotData->params,
-                                 uv_default_loop(),
-                                 per_process::v8_platform.Platform(),
-                                 initResult.args,
-                                 initResult.exec_args,
-                                 snapshotData->indexes);
+  auto loop = std::unique_ptr<uv_loop_t>(new uv_loop_t());
+  uv_loop_init(loop.get());
 
-  const auto envPreparator = [script](Environment* env) {
-    env->options()->has_eval_string = true;
-    env->options()->eval_string = script;
-  };
+  {
+    NodeMainInstance main_instance(&snapshotData->params,
+                                   loop.get(),
+                                   per_process::v8_platform.Platform(),
+                                   initResult.args,
+                                   initResult.exec_args,
+                                   snapshotData->indexes);
 
-  const auto envHandler =
-      [](Environment* env) {
-        // TODO Взаимодействие с контекстом
-      };
+    const auto envPreparator = [script](Environment* env) {
+      env->options()->has_eval_string = true;
+      env->options()->eval_string = script;
+    };
 
-  try {
-    int exit_code = main_instance.Run(envPreparator, envHandler);
-  } catch (const NodeException& err) {
-    int b = 5;
+    const auto envHandler =
+        [](Environment* env) {
+          // TODO Взаимодействие с контекстом
+        };
+
+    try {
+      int exit_code = main_instance.Run(envPreparator, envHandler);
+    } catch (const NodeException& err) {
+      int b = 5;
+    }
   }
+
+  int close_result = uv_loop_close(loop.get());
+  DCHECK(close_result == 0);
 }
 
 SnapshotData* Runner::GetSnapshot() const {
