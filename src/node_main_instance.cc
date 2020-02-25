@@ -191,6 +191,103 @@ int NodeMainInstance::Run() {
   return exit_code;
 }
 
+
+int NodeMainInstance::RunAndHandleEnv(
+    const std::function<void(Environment* env)> envPreparator,
+    const std::function<void(Environment* env)> envHandler) {
+  Locker locker(isolate_);
+  Isolate::Scope isolate_scope(isolate_);
+  HandleScope handle_scope(isolate_);
+
+  int exit_code = 0;
+  std::unique_ptr<Environment> env = CreateMainEnvironment(&exit_code);
+
+  if (envPreparator) {
+    envPreparator(env.get());
+  }
+
+  try {
+    CHECK_NOT_NULL(env);
+    Context::Scope context_scope(env->context());
+
+    if (exit_code == 0) {
+      {
+        InternalCallbackScope callback_scope(
+            env.get(),
+            Object::New(isolate_),
+            {1, 0},
+            InternalCallbackScope::kSkipAsyncHooks);
+        LoadEnvironment(env.get());
+      }
+
+      env->set_trace_sync_io(env->options()->trace_sync_io);
+
+      {
+        SealHandleScope seal(isolate_);
+        bool more;
+        env->performance_state()->Mark(
+            node::performance::NODE_PERFORMANCE_MILESTONE_LOOP_START);
+        do {
+          uv_run(env->event_loop(), UV_RUN_DEFAULT);
+
+          per_process::v8_platform.DrainVMTasks(isolate_);
+
+          more = uv_loop_alive(env->event_loop());
+          if (more && !env->is_stopping()) continue;
+
+          if (!uv_loop_alive(env->event_loop())) {
+            EmitBeforeExit(env.get());
+          }
+
+          // Emit `beforeExit` if the loop became alive either after emitting
+          // event, or after running some callbacks.
+          more = uv_loop_alive(env->event_loop());
+        } while (more == true && !env->is_stopping());
+        env->performance_state()->Mark(
+            node::performance::NODE_PERFORMANCE_MILESTONE_LOOP_EXIT);
+      }
+
+      env->set_trace_sync_io(false);
+      exit_code = EmitExit(env.get());
+    }
+  } catch (const NodeException& err) {
+    env->set_can_call_into_js(false);
+    env->stop_sub_worker_contexts();
+    ResetStdio();
+    env->RunCleanup();
+
+    // TODO(addaleax): Neither NODE_SHARED_MODE nor HAVE_INSPECTOR really
+    // make sense here.
+#if HAVE_INSPECTOR && defined(__POSIX__) && !defined(NODE_SHARED_MODE)
+    struct sigaction act;
+    memset(&act, 0, sizeof(act));
+    for (unsigned nr = 1; nr < kMaxSignal; nr += 1) {
+      if (nr == SIGKILL || nr == SIGSTOP || nr == SIGPROF) continue;
+      act.sa_handler = (nr == SIGPIPE) ? SIG_IGN : SIG_DFL;
+      CHECK_EQ(0, sigaction(nr, &act, nullptr));
+    }
+#endif
+
+    RunAtExit(env.get());
+
+    per_process::v8_platform.DrainVMTasks(isolate_);
+
+    if (envHandler) {
+      envHandler(env.get());
+    }
+
+#if defined(LEAK_SANITIZER)
+    __lsan_do_leak_check();
+#endif
+
+    isolate_->ClearPendingException();
+
+    throw;
+  }
+
+  return exit_code;
+}
+
 // TODO(joyeecheung): align this with the CreateEnvironment exposed in node.h
 // and the environment creation routine in workers somehow.
 std::unique_ptr<Environment> NodeMainInstance::CreateMainEnvironment(

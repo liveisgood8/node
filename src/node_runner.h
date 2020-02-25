@@ -1,16 +1,10 @@
 #ifndef NODE_RUNNER_H_
 #define NODE_RUNNER_H_
 
+#include "node.h"
+
 #include <memory>
 #include <vector>
-
-namespace node {
-class Environment;
-class MultiIsolatePlatform;
-class MultiIsolatePlatform;
-class IsolateData;
-class ArrayBufferAllocator;
-}  // namespace node
 
 namespace v8 {
 class Isolate;
@@ -19,43 +13,31 @@ class Isolate;
 struct uv_loop_s;
 
 struct SnapshotData;
-struct NodeIsolate;
+//struct NodeIsolate;
 
-class __declspec(dllexport) Runner final {
- public:
-  Runner(const Runner&) = delete;
-  Runner& operator=(const Runner&) = delete;
+namespace node {
+ class Environment;
 
-  static Runner* GetInstance();
+ class NODE_EXTERN Runner {
+  public:
+   Runner(const Runner&) = delete;
+   Runner& operator=(const Runner&) = delete;
 
-  void SetDebugEnable(bool isEnabled);
+   static Runner* GetInstance();
 
-  void Init(int argc, const char** argv);
+   void Init(int argc, const char** argv);
+   void RunScript(const char* script);
 
-  void RunScript(const char* script);
+  private:
+   Runner() = default;
+   ~Runner();
 
- private:
-  Runner() = default;
-  ~Runner();
+   SnapshotData* GetSnapshot() const;
+   //NodeIsolate* GetNodeIsolate(uv_loop_s* eventLoop);
 
-  node::Environment* CreateMainEnvironment();
-  SnapshotData* GetSnapshot() const;
-  NodeIsolate* GetNodeIsolate(uv_loop_s* eventLoop);
-
-  void RunEnvironment(NodeIsolate* nodeIsolate, node::Environment* env) const;
-
- private:
-  SnapshotData *snapshotData = nullptr;
-  node::MultiIsolatePlatform* platform = nullptr;
-  node::ArrayBufferAllocator* allocator = nullptr;
-  NodeIsolate *nodeIsolate = nullptr;
-  node::Environment *env = nullptr;
-
-  bool isDeserealizeMode = false;
-
-  bool isDebug = false;
-};
-
-int __declspec(dllexport) RunNode(int argc, const char* argv[]);
+  private:
+   SnapshotData* snapshotData = nullptr;
+ };
+ }  // namespace node
 
 #endif  // NODE_RUNNER_H_
