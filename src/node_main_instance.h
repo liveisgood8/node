@@ -55,10 +55,8 @@ class NodeMainInstance {
   ~NodeMainInstance();
 
   // Start running the Node.js instances, return the exit code when finished.
-  int Run();
-  int RunAndHandleEnv(
-    const std::function<void(Environment* env)> envPreparator,
-    const std::function<void(Environment *env)> envHandler);
+  int Run(const std::function<void(Environment* env)> envPreparator = nullptr,
+          const std::function<void(Environment* env)> envHandler = nullptr);
 
   IsolateData* isolate_data() { return isolate_data_.get(); }
 

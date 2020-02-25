@@ -46,14 +46,14 @@ void Runner::RunScript(const char* script) {
 
   const auto envHandler =
       [](Environment* env) {
-        // TODO Взаимодействие с контекстом
+        // TODO Р’Р·Р°РёРјРѕРґРµР№СЃС‚РІРёРµ СЃ РєРѕРЅС‚РµРєСЃС‚РѕРј
       };
 
-  //try {
-    int exit_code = main_instance.RunAndHandleEnv(envPreparator, envHandler);
-  //} catch (const NodeException& err) {
-  //  int b = 5;
-  //}
+  try {
+    int exit_code = main_instance.Run(envPreparator, envHandler);
+  } catch (const NodeException& err) {
+    int b = 5;
+  }
 }
 
 SnapshotData* Runner::GetSnapshot() const {
