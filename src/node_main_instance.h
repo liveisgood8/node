@@ -55,7 +55,8 @@ class NodeMainInstance {
   ~NodeMainInstance();
 
   // Start running the Node.js instances, return the exit code when finished.
-  int Run();
+  int Run(const std::function<void(Environment* env)> envPreparator = nullptr,
+          const std::function<void(Environment* env)> envHandler = nullptr);
 
   IsolateData* isolate_data() { return isolate_data_.get(); }
 
@@ -87,6 +88,7 @@ class NodeMainInstance {
   v8::Isolate* isolate_;
   MultiIsolatePlatform* platform_;
   std::unique_ptr<IsolateData> isolate_data_;
+  uv_loop_t *event_loop;
   bool owns_isolate_ = false;
   bool deserialize_mode_ = false;
 };

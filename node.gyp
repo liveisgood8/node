@@ -577,6 +577,8 @@
         'src/node_types.cc',
         'src/node_url.cc',
         'src/node_util.cc',
+        'src/node_runner.cc',
+        'src/node_runner.h',
         'src/node_v8.cc',
         'src/node_wasi.cc',
         'src/node_watchdog.cc',

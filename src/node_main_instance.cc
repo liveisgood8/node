@@ -34,6 +34,7 @@ NodeMainInstance::NodeMainInstance(Isolate* isolate,
       isolate_(isolate),
       platform_(platform),
       isolate_data_(nullptr),
+      event_loop(event_loop),
       owns_isolate_(false),
       deserialize_mode_(false) {
   isolate_data_ =
@@ -66,6 +67,7 @@ NodeMainInstance::NodeMainInstance(
       isolate_(nullptr),
       platform_(platform),
       isolate_data_(nullptr),
+      event_loop(event_loop),
       owns_isolate_(true) {
   params->array_buffer_allocator = array_buffer_allocator_.get();
   isolate_ = Isolate::Allocate();
@@ -75,6 +77,9 @@ NodeMainInstance::NodeMainInstance(
   platform->RegisterIsolate(isolate_, event_loop);
   SetIsolateCreateParamsForNode(params);
   Isolate::Initialize(isolate_, *params);
+
+  Locker locker(isolate_);
+  isolate_->Enter();
 
   deserialize_mode_ = per_isolate_data_indexes != nullptr;
   // If the indexes are not nullptr, we are not deserializing
@@ -91,6 +96,7 @@ NodeMainInstance::NodeMainInstance(
     // complete.
     SetIsolateErrorHandlers(isolate_, s);
   }
+
 }
 
 void NodeMainInstance::Dispose() {
@@ -106,11 +112,58 @@ NodeMainInstance::~NodeMainInstance() {
   // dispose the Isolate is a temporary workaround for
   // https://github.com/nodejs/node/issues/31752 -- V8 should not be posting
   // platform tasks during Dispose(), but it does in some WASM edge cases.
+  isolate_->Exit();
+
+  bool platform_finished = false;
+
+  platform_->AddIsolateFinishedCallback(
+      isolate_,
+      [](void* data) { *static_cast<bool*>(data) = true; },
+      &platform_finished);
+
   isolate_->Dispose();
   platform_->UnregisterIsolate(isolate_);
+
+  DCHECK(event_loop);
+  while (!platform_finished) {
+    uv_run(event_loop, UV_RUN_ONCE);
+  }
 }
 
-int NodeMainInstance::Run() {
+int NodeMainInstance::Run(
+    const std::function<void(Environment* env)> envPreparator,
+    const std::function<void(Environment* env)> envHandler) {
+#if HAVE_INSPECTOR && defined(__POSIX__) && !defined(NODE_SHARED_MODE)
+#define CLEAN_UP()                                                             \
+  env->set_can_call_into_js(false);                                            \
+  env->stop_sub_worker_contexts();                                             \
+  ResetStdio();                                                                \
+  env->RunCleanup();                                                           \
+  struct sigaction act;                                                        \
+  memset(&act, 0, sizeof(act));                                                \
+  for (unsigned nr = 1; nr < kMaxSignal; nr += 1) {                            \
+    if (nr == SIGKILL || nr == SIGSTOP || nr == SIGPROF) continue;             \
+    act.sa_handler = (nr == SIGPIPE) ? SIG_IGN : SIG_DFL;                      \
+    CHECK_EQ(0, sigaction(nr, &act, nullptr));                                 \
+  }                                                                            \
+  RunAtExit(env.get());                                                        \
+  per_process::v8_platform.DrainVMTasks(isolate_);                             \
+  if (envHandler) {                                                            \
+    envHandler(env.get());                                                     \
+  }
+#else
+#define CLEAN_UP()                                                             \
+  env->set_can_call_into_js(false);                                            \
+  env->stop_sub_worker_contexts();                                             \
+  ResetStdio();                                                                \
+  env->RunCleanup();                                                           \
+  RunAtExit(env.get());                                                        \
+  per_process::v8_platform.DrainVMTasks(isolate_);                             \
+  if (envHandler) {                                                            \
+    envHandler(env.get());                                                     \
+  }
+#endif
+
   Locker locker(isolate_);
   Isolate::Scope isolate_scope(isolate_);
   HandleScope handle_scope(isolate_);
@@ -118,76 +171,61 @@ int NodeMainInstance::Run() {
   int exit_code = 0;
   std::unique_ptr<Environment> env = CreateMainEnvironment(&exit_code);
 
-  CHECK_NOT_NULL(env);
-  Context::Scope context_scope(env->context());
-
-  if (exit_code == 0) {
-    {
-      InternalCallbackScope callback_scope(
-          env.get(),
-          Object::New(isolate_),
-          { 1, 0 },
-          InternalCallbackScope::kSkipAsyncHooks);
-      LoadEnvironment(env.get());
+  try {
+    if (envPreparator) {
+      envPreparator(env.get());
     }
 
-    env->set_trace_sync_io(env->options()->trace_sync_io);
+    CHECK_NOT_NULL(env);
+    Context::Scope context_scope(env->context());
 
-    {
-      SealHandleScope seal(isolate_);
-      bool more;
-      env->performance_state()->Mark(
-          node::performance::NODE_PERFORMANCE_MILESTONE_LOOP_START);
-      do {
-        uv_run(env->event_loop(), UV_RUN_DEFAULT);
+    if (exit_code == 0) {
+      {
+        InternalCallbackScope callback_scope(
+            env.get(),
+            Object::New(isolate_),
+            { 1, 0 },
+            InternalCallbackScope::kSkipAsyncHooks);
+        LoadEnvironment(env.get());
+      }
 
-        per_process::v8_platform.DrainVMTasks(isolate_);
+      env->set_trace_sync_io(env->options()->trace_sync_io);
 
-        more = uv_loop_alive(env->event_loop());
-        if (more && !env->is_stopping()) continue;
+      {
+        SealHandleScope seal(isolate_);
+        bool more;
+        env->performance_state()->Mark(
+            node::performance::NODE_PERFORMANCE_MILESTONE_LOOP_START);
+        do {
+          uv_run(env->event_loop(), UV_RUN_DEFAULT);
 
-        if (!uv_loop_alive(env->event_loop())) {
-          EmitBeforeExit(env.get());
-        }
+          per_process::v8_platform.DrainVMTasks(isolate_);
 
-        // Emit `beforeExit` if the loop became alive either after emitting
-        // event, or after running some callbacks.
-        more = uv_loop_alive(env->event_loop());
-      } while (more == true && !env->is_stopping());
-      env->performance_state()->Mark(
-          node::performance::NODE_PERFORMANCE_MILESTONE_LOOP_EXIT);
+          more = uv_loop_alive(env->event_loop());
+          if (more && !env->is_stopping()) continue;
+
+          if (!uv_loop_alive(env->event_loop())) {
+            EmitBeforeExit(env.get());
+          }
+
+          // Emit `beforeExit` if the loop became alive either after emitting
+          // event, or after running some callbacks.
+          more = uv_loop_alive(env->event_loop());
+        } while (more == true && !env->is_stopping());
+        env->performance_state()->Mark(
+            node::performance::NODE_PERFORMANCE_MILESTONE_LOOP_EXIT);
+      }
+
+      env->set_trace_sync_io(false);
+      exit_code = EmitExit(env.get());
     }
-
-    env->set_trace_sync_io(false);
-    exit_code = EmitExit(env.get());
+  } catch (const NodeException&) {
+    CLEAN_UP();
+    isolate_->ClearPendingException();
+    throw;
   }
 
-  env->set_can_call_into_js(false);
-  env->stop_sub_worker_contexts();
-  ResetStdio();
-  env->RunCleanup();
-
-  // TODO(addaleax): Neither NODE_SHARED_MODE nor HAVE_INSPECTOR really
-  // make sense here.
-#if HAVE_INSPECTOR && defined(__POSIX__) && !defined(NODE_SHARED_MODE)
-  struct sigaction act;
-  memset(&act, 0, sizeof(act));
-  for (unsigned nr = 1; nr < kMaxSignal; nr += 1) {
-    if (nr == SIGKILL || nr == SIGSTOP || nr == SIGPROF)
-      continue;
-    act.sa_handler = (nr == SIGPIPE) ? SIG_IGN : SIG_DFL;
-    CHECK_EQ(0, sigaction(nr, &act, nullptr));
-  }
-#endif
-
-  RunAtExit(env.get());
-
-  per_process::v8_platform.DrainVMTasks(isolate_);
-
-#if defined(LEAK_SANITIZER)
-  __lsan_do_leak_check();
-#endif
-
+  CLEAN_UP();
   return exit_code;
 }
 
@@ -233,7 +271,14 @@ std::unique_ptr<Environment> NodeMainInstance::CreateMainEnvironment(
   // TODO(joyeecheung): when we snapshot the bootstrapped context,
   // the inspector and diagnostics setup should after after deserialization.
 #if HAVE_INSPECTOR
-  *exit_code = env->InitializeInspector({});
+  if ((!env->options()->has_eval_string &&
+      !env->options()->print_eval) ||
+      (
+       env->options()->get_debug_options()->inspector_enabled ||
+       env->options()->get_debug_options()->break_first_line ||
+       env->options()->get_debug_options()->break_node_first_line)) {
+    *exit_code = env->InitializeInspector({});
+  }
 #endif
   if (*exit_code != 0) {
     return env;

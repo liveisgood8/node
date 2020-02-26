@@ -36,6 +36,7 @@
 #include "node_perf.h"
 #include "node_process.h"
 #include "node_revert.h"
+#include "node_runner.h"
 #include "node_v8_platform-inl.h"
 #include "node_version.h"
 
@@ -90,10 +91,9 @@
 #include <sys/types.h>
 
 #if defined(NODE_HAVE_I18N_SUPPORT)
-#include <unicode/uvernum.h>
 #include <unicode/utypes.h>
+#include <unicode/uvernum.h>
 #endif
-
 
 #if defined(LEAK_SANITIZER)
 #include <sanitizer/lsan_interface.h>
@@ -295,16 +295,14 @@ MaybeLocal<Value> Environment::BootstrapNode() {
       .Check();
 
   // process, require, internalBinding, primordials
-  std::vector<Local<String>> node_params = {
-      process_string(),
-      require_string(),
-      internal_binding_string(),
-      primordials_string()};
-  std::vector<Local<Value>> node_args = {
-      process_object(),
-      native_module_require(),
-      internal_binding_loader(),
-      primordials()};
+  std::vector<Local<String>> node_params = {process_string(),
+                                            require_string(),
+                                            internal_binding_string(),
+                                            primordials_string()};
+  std::vector<Local<Value>> node_args = {process_object(),
+                                         native_module_require(),
+                                         internal_binding_loader(),
+                                         primordials()};
 
   MaybeLocal<Value> result = ExecuteBootstrapper(
       this, "internal/bootstrap/node", &node_params, &node_args);
@@ -422,7 +420,6 @@ MaybeLocal<Value> StartMainThreadExecution(Environment* env) {
     return StartExecution(env, "internal/main/print_help");
   }
 
-
   if (env->options()->prof_process) {
     return StartExecution(env, "internal/main/prof_process");
   }
@@ -513,7 +510,6 @@ static struct {
 } stdio[1 + STDERR_FILENO];
 #endif  // __POSIX__
 
-
 inline void PlatformInit() {
 #ifdef __POSIX__
 #if HAVE_INSPECTOR
@@ -526,16 +522,12 @@ inline void PlatformInit() {
   // Make sure file descriptors 0-2 are valid before we start logging anything.
   for (auto& s : stdio) {
     const int fd = &s - stdio;
-    if (fstat(fd, &s.stat) == 0)
-      continue;
+    if (fstat(fd, &s.stat) == 0) continue;
     // Anything but EBADF means something is seriously wrong.  We don't
     // have to special-case EINTR, fstat() is not interruptible.
-    if (errno != EBADF)
-      ABORT();
-    if (fd != open("/dev/null", O_RDWR))
-      ABORT();
-    if (fstat(fd, &s.stat) != 0)
-      ABORT();
+    if (errno != EBADF) ABORT();
+    if (fd != open("/dev/null", O_RDWR)) ABORT();
+    if (fstat(fd, &s.stat) != 0) ABORT();
   }
 
 #if HAVE_INSPECTOR
@@ -552,8 +544,7 @@ inline void PlatformInit() {
   // it evaluates to 32, 34 or 64, depending on whether RT signals are enabled.
   // Counting up to SIGRTMIN doesn't work for the same reason.
   for (unsigned nr = 1; nr < kMaxSignal; nr += 1) {
-    if (nr == SIGKILL || nr == SIGSTOP)
-      continue;
+    if (nr == SIGKILL || nr == SIGSTOP) continue;
     act.sa_handler = (nr == SIGPIPE || nr == SIGXFSZ) ? SIG_IGN : SIG_DFL;
     CHECK_EQ(0, sigaction(nr, &act, nullptr));
   }
@@ -626,8 +617,7 @@ inline void PlatformInit() {
       // Ignore _close result. If it fails or not depends on used Windows
       // version. We will just check _open result.
       _close(fd);
-      if (fd != _open("nul", _O_RDWR))
-        ABORT();
+      if (fd != _open("nul", _O_RDWR)) ABORT();
     }
   }
 #endif  // _WIN32
@@ -689,7 +679,6 @@ void ResetStdio() {
 #endif  // __POSIX__
 }
 
-
 int ProcessGlobalArgs(std::vector<std::string>* args,
                       std::vector<std::string>* exec_args,
                       std::vector<std::string>* errors,
@@ -698,13 +687,12 @@ int ProcessGlobalArgs(std::vector<std::string>* args,
   std::vector<std::string> v8_args;
 
   Mutex::ScopedLock lock(per_process::cli_options_mutex);
-  options_parser::Parse(
-      args,
-      exec_args,
-      &v8_args,
-      per_process::cli_options.get(),
-      settings,
-      errors);
+  options_parser::Parse(args,
+                        exec_args,
+                        &v8_args,
+                        per_process::cli_options.get(),
+                        settings,
+                        errors);
 
   if (!errors->empty()) return 9;
 
@@ -718,9 +706,11 @@ int ProcessGlobalArgs(std::vector<std::string>* args,
   }
 
   auto env_opts = per_process::cli_options->per_isolate->per_env;
-  if (std::find(v8_args.begin(), v8_args.end(),
+  if (std::find(v8_args.begin(),
+                v8_args.end(),
                 "--abort-on-uncaught-exception") != v8_args.end() ||
-      std::find(v8_args.begin(), v8_args.end(),
+      std::find(v8_args.begin(),
+                v8_args.end(),
                 "--abort_on_uncaught_exception") != v8_args.end()) {
     env_opts->abort_on_uncaught_exception = true;
   }
@@ -804,18 +794,14 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
     // [0] is expected to be the program name, fill it in from the real argv.
     env_argv.insert(env_argv.begin(), argv->at(0));
 
-    const int exit_code = ProcessGlobalArgs(&env_argv,
-                                            nullptr,
-                                            errors,
-                                            kAllowedInEnvironment);
+    const int exit_code =
+        ProcessGlobalArgs(&env_argv, nullptr, errors, kAllowedInEnvironment);
     if (exit_code != 0) return exit_code;
   }
 #endif
 
-  const int exit_code = ProcessGlobalArgs(argv,
-                                          exec_argv,
-                                          errors,
-                                          kDisallowedInEnvironment);
+  const int exit_code =
+      ProcessGlobalArgs(argv, exec_argv, errors, kDisallowedInEnvironment);
   if (exit_code != 0) return exit_code;
 
   // Set the process.title immediately after processing argv if --title is set.
@@ -880,17 +866,20 @@ void Init(int* argc,
 
   for (const std::string& error : errors)
     fprintf(stderr, "%s: %s\n", argv_.at(0).c_str(), error.c_str());
-  if (exit_code != 0) exit(exit_code);
+
+  if (exit_code != 0) {
+    throw NodeException(exit_code, "Error when initialization node with args");
+  }
 
   if (per_process::cli_options->print_version) {
     printf("%s\n", NODE_VERSION);
-    exit(0);
+    ::exit(0);
   }
 
   if (per_process::cli_options->print_bash_completion) {
     std::string completion = options_parser::GetBashCompletion();
     printf("%s\n", completion.c_str());
-    exit(0);
+    ::exit(0);
   }
 
   if (per_process::cli_options->print_v8_help) {
@@ -966,7 +955,7 @@ InitializationResult InitializeOncePerProcess(int argc, char** argv) {
   if (per_process::cli_options->print_bash_completion) {
     std::string completion = options_parser::GetBashCompletion();
     printf("%s\n", completion.c_str());
-    exit(0);
+    ::exit(0);
   }
 
   if (per_process::cli_options->print_v8_help) {
@@ -1010,6 +999,10 @@ void TearDownOncePerProcess() {
   // Since uv_run cannot be called, uv_async handles held by the platform
   // will never be fully cleaned up.
   per_process::v8_platform.Dispose();
+}
+
+Runner* GetRunner() {
+  return Runner::GetInstance();
 }
 
 int Start(int argc, char** argv) {

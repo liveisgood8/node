@@ -18,6 +18,7 @@
 // DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
+#include "node_main.h"
 
 #include "node.h"
 #include <cstdio>
@@ -126,3 +127,15 @@ int main(int argc, char* argv[]) {
   return node::Start(argc, argv);
 }
 #endif
+
+node::Runner* GetRunner() {
+  return node::GetRunner();
+}
+
+int RunNode(int argc, const char* argv[]) {
+  try {
+    return node::Start(argc, const_cast<char**>(argv));
+  } catch (const node::NodeException&) {
+    return 500;
+  }
+}

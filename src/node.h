@@ -23,31 +23,31 @@
 #define SRC_NODE_H_
 
 #ifdef _WIN32
-# ifndef BUILDING_NODE_EXTENSION
-#  define NODE_EXTERN __declspec(dllexport)
-# else
-#  define NODE_EXTERN __declspec(dllimport)
-# endif
+#ifndef BUILDING_NODE_EXTENSION
+#define NODE_EXTERN __declspec(dllexport)
 #else
-# define NODE_EXTERN __attribute__((visibility("default")))
+#define NODE_EXTERN __declspec(dllimport)
+#endif
+#else
+#define NODE_EXTERN __attribute__((visibility("default")))
 #endif
 
 #ifdef BUILDING_NODE_EXTENSION
-# undef BUILDING_V8_SHARED
-# undef BUILDING_UV_SHARED
-# define USING_V8_SHARED 1
-# define USING_UV_SHARED 1
+#undef BUILDING_V8_SHARED
+#undef BUILDING_UV_SHARED
+#define USING_V8_SHARED 1
+#define USING_UV_SHARED 1
 #endif
 
 // This should be defined in make system.
 // See issue https://github.com/nodejs/node-v0.x-archive/issues/1236
 #if defined(__MINGW32__) || defined(_MSC_VER)
 #ifndef _WIN32_WINNT
-# define _WIN32_WINNT 0x0600  // Windows Server 2008
+#define _WIN32_WINNT 0x0600  // Windows Server 2008
 #endif
 
 #ifndef NOMINMAX
-# define NOMINMAX
+#define NOMINMAX
 #endif
 
 #endif
@@ -57,7 +57,7 @@
 #endif
 
 #ifdef _WIN32
-# define SIGKILL 9
+#define SIGKILL 9
 #endif
 
 #if (__GNUC__ >= 8) && !defined(__clang__)
@@ -69,8 +69,8 @@
 #pragma GCC diagnostic pop
 #endif
 
-#include "v8-platform.h"  // NOLINT(build/include_order)
 #include "node_version.h"  // NODE_MODULE_VERSION
+#include "v8-platform.h"   // NOLINT(build/include_order)
 
 #include <memory>
 
@@ -80,37 +80,36 @@
 #include <signal.h>
 #endif  // _WIN32
 
-#define NODE_MAKE_VERSION(major, minor, patch)                                \
-  ((major) * 0x1000 + (minor) * 0x100 + (patch))
+#define NODE_MAKE_VERSION(major, minor, patch)                                 \
+  ((major)*0x1000 + (minor)*0x100 + (patch))
 
 #ifdef __clang__
-# define NODE_CLANG_AT_LEAST(major, minor, patch)                             \
-  (NODE_MAKE_VERSION(major, minor, patch) <=                                  \
-      NODE_MAKE_VERSION(__clang_major__, __clang_minor__, __clang_patchlevel__))
+#define NODE_CLANG_AT_LEAST(major, minor, patch)                               \
+  (NODE_MAKE_VERSION(major, minor, patch) <=                                   \
+   NODE_MAKE_VERSION(__clang_major__, __clang_minor__, __clang_patchlevel__))
 #else
-# define NODE_CLANG_AT_LEAST(major, minor, patch) (0)
+#define NODE_CLANG_AT_LEAST(major, minor, patch) (0)
 #endif
 
 #ifdef __GNUC__
-# define NODE_GNUC_AT_LEAST(major, minor, patch)                              \
-  (NODE_MAKE_VERSION(major, minor, patch) <=                                  \
-      NODE_MAKE_VERSION(__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__))
+#define NODE_GNUC_AT_LEAST(major, minor, patch)                                \
+  (NODE_MAKE_VERSION(major, minor, patch) <=                                   \
+   NODE_MAKE_VERSION(__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__))
 #else
-# define NODE_GNUC_AT_LEAST(major, minor, patch) (0)
+#define NODE_GNUC_AT_LEAST(major, minor, patch) (0)
 #endif
 
 #if defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
-# define NODE_DEPRECATED(message, declarator) declarator
+#define NODE_DEPRECATED(message, declarator) declarator
 #else  // NODE_WANT_INTERNALS
-# if NODE_CLANG_AT_LEAST(2, 9, 0) || NODE_GNUC_AT_LEAST(4, 5, 0)
-#  define NODE_DEPRECATED(message, declarator)                                 \
-    __attribute__((deprecated(message))) declarator
-# elif defined(_MSC_VER)
-#  define NODE_DEPRECATED(message, declarator)                                 \
-    __declspec(deprecated) declarator
-# else
-#  define NODE_DEPRECATED(message, declarator) declarator
-# endif
+#if NODE_CLANG_AT_LEAST(2, 9, 0) || NODE_GNUC_AT_LEAST(4, 5, 0)
+#define NODE_DEPRECATED(message, declarator)                                   \
+  __attribute__((deprecated(message))) declarator
+#elif defined(_MSC_VER)
+#define NODE_DEPRECATED(message, declarator) __declspec(deprecated) declarator
+#else
+#define NODE_DEPRECATED(message, declarator) declarator
+#endif
 #endif
 
 // Forward-declare libuv loop
@@ -123,7 +122,6 @@ namespace node {
 namespace tracing {
 
 class TracingController;
-
 }
 
 NODE_EXTERN v8::Local<v8::Value> ErrnoException(v8::Isolate* isolate,
@@ -138,30 +136,25 @@ NODE_EXTERN v8::Local<v8::Value> UVException(v8::Isolate* isolate,
                                              const char* path = nullptr,
                                              const char* dest = nullptr);
 
-NODE_DEPRECATED("Use ErrnoException(isolate, ...)",
-                inline v8::Local<v8::Value> ErrnoException(
-      int errorno,
-      const char* syscall = nullptr,
-      const char* message = nullptr,
-      const char* path = nullptr) {
-  return ErrnoException(v8::Isolate::GetCurrent(),
-                        errorno,
-                        syscall,
-                        message,
-                        path);
-})
+NODE_DEPRECATED(
+    "Use ErrnoException(isolate, ...)",
+    inline v8::Local<v8::Value> ErrnoException(int errorno,
+                                               const char* syscall = nullptr,
+                                               const char* message = nullptr,
+                                               const char* path = nullptr) {
+      return ErrnoException(
+          v8::Isolate::GetCurrent(), errorno, syscall, message, path);
+    })
 
-NODE_DEPRECATED("Use UVException(isolate, ...)",
-                inline v8::Local<v8::Value> UVException(int errorno,
-                                        const char* syscall = nullptr,
-                                        const char* message = nullptr,
-                                        const char* path = nullptr) {
-  return UVException(v8::Isolate::GetCurrent(),
-                     errorno,
-                     syscall,
-                     message,
-                     path);
-})
+NODE_DEPRECATED(
+    "Use UVException(isolate, ...)",
+    inline v8::Local<v8::Value> UVException(int errorno,
+                                            const char* syscall = nullptr,
+                                            const char* message = nullptr,
+                                            const char* path = nullptr) {
+      return UVException(
+          v8::Isolate::GetCurrent(), errorno, syscall, message, path);
+    })
 
 /*
  * These methods need to be called in a HandleScope.
@@ -170,20 +163,20 @@ NODE_DEPRECATED("Use UVException(isolate, ...)",
  * `async_context` arguments.
  */
 
-NODE_DEPRECATED("Use MakeCallback(..., async_context)",
-                NODE_EXTERN v8::Local<v8::Value> MakeCallback(
-                    v8::Isolate* isolate,
-                    v8::Local<v8::Object> recv,
-                    const char* method,
-                    int argc,
-                    v8::Local<v8::Value>* argv));
-NODE_DEPRECATED("Use MakeCallback(..., async_context)",
-                NODE_EXTERN v8::Local<v8::Value> MakeCallback(
-                    v8::Isolate* isolate,
-                    v8::Local<v8::Object> recv,
-                    v8::Local<v8::String> symbol,
-                    int argc,
-                    v8::Local<v8::Value>* argv));
+NODE_DEPRECATED(
+    "Use MakeCallback(..., async_context)",
+    NODE_EXTERN v8::Local<v8::Value> MakeCallback(v8::Isolate* isolate,
+                                                  v8::Local<v8::Object> recv,
+                                                  const char* method,
+                                                  int argc,
+                                                  v8::Local<v8::Value>* argv));
+NODE_DEPRECATED(
+    "Use MakeCallback(..., async_context)",
+    NODE_EXTERN v8::Local<v8::Value> MakeCallback(v8::Isolate* isolate,
+                                                  v8::Local<v8::Object> recv,
+                                                  v8::Local<v8::String> symbol,
+                                                  int argc,
+                                                  v8::Local<v8::Value>* argv));
 NODE_DEPRECATED("Use MakeCallback(..., async_context)",
                 NODE_EXTERN v8::Local<v8::Value> MakeCallback(
                     v8::Isolate* isolate,
@@ -198,25 +191,27 @@ NODE_DEPRECATED("Use MakeCallback(..., async_context)",
 #include <cstdint>
 
 #ifndef NODE_STRINGIFY
-# define NODE_STRINGIFY(n) NODE_STRINGIFY_HELPER(n)
-# define NODE_STRINGIFY_HELPER(n) #n
+#define NODE_STRINGIFY(n) NODE_STRINGIFY_HELPER(n)
+#define NODE_STRINGIFY_HELPER(n) #n
 #endif
 
 #ifdef _WIN32
 #if !defined(_SSIZE_T_) && !defined(_SSIZE_T_DEFINED)
 typedef intptr_t ssize_t;
-# define _SSIZE_T_
-# define _SSIZE_T_DEFINED
+#define _SSIZE_T_
+#define _SSIZE_T_DEFINED
 #endif
-#else  // !_WIN32
-# include <sys/types.h>  // size_t, ssize_t
-#endif  // _WIN32
-
+#else                   // !_WIN32
+#include <sys/types.h>  // size_t, ssize_t
+#endif                  // _WIN32
 
 namespace node {
 
 class IsolateData;
 class Environment;
+class Runner;
+
+NODE_EXTERN Runner* GetRunner();
 
 // TODO(addaleax): Officially deprecate this and replace it with something
 // better suited for a public embedder API.
@@ -239,9 +234,9 @@ enum OptionEnvvarSettings {
 };
 
 NODE_EXTERN int ProcessGlobalArgs(std::vector<std::string>* args,
-                      std::vector<std::string>* exec_args,
-                      std::vector<std::string>* errors,
-                      OptionEnvvarSettings settings);
+                                  std::vector<std::string>* exec_args,
+                                  std::vector<std::string>* errors,
+                                  OptionEnvvarSettings settings);
 
 class NodeArrayBufferAllocator;
 
@@ -264,6 +259,17 @@ class NODE_EXTERN ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
   virtual NodeArrayBufferAllocator* GetImpl() = 0;
 
   friend class IsolateData;
+};
+
+class NODE_EXTERN NodeException : public std::runtime_error {
+ public:
+  explicit NodeException(int exitCode, const char* message)
+      : std::runtime_error(message) {}
+
+  inline int GetExitCode() const { return exitCode; }
+
+ private:
+  int exitCode = 0;
 };
 
 // Legacy equivalents for ArrayBufferAllocator::Create().
@@ -312,7 +318,7 @@ enum IsolateSettingsFlags {
 
 struct IsolateSettings {
   uint64_t flags = MESSAGE_LISTENER_WITH_ERROR_LEVEL |
-      DETAILED_SOURCE_POSITIONS_FOR_PROFILING;
+                   DETAILED_SOURCE_POSITIONS_FOR_PROFILING;
   v8::MicrotasksPolicy policy = v8::MicrotasksPolicy::kExplicit;
 
   // Error handling callbacks
@@ -323,8 +329,8 @@ struct IsolateSettings {
 
   // Miscellaneous callbacks
   v8::PromiseRejectCallback promise_reject_callback = nullptr;
-  v8::AllowWasmCodeGenerationCallback
-      allow_wasm_code_generation_callback = nullptr;
+  v8::AllowWasmCodeGenerationCallback allow_wasm_code_generation_callback =
+      nullptr;
   v8::HostCleanupFinalizationGroupCallback
       host_cleanup_finalization_group_callback = nullptr;
 };
@@ -395,8 +401,7 @@ NODE_EXTERN Environment* GetCurrentEnvironment(v8::Local<v8::Context> context);
 NODE_EXTERN MultiIsolatePlatform* GetMainThreadMultiIsolatePlatform();
 
 NODE_EXTERN MultiIsolatePlatform* CreatePlatform(
-    int thread_pool_size,
-    node::tracing::TracingController* tracing_controller);
+    int thread_pool_size, node::tracing::TracingController* tracing_controller);
 NODE_EXTERN void FreePlatform(MultiIsolatePlatform* platform);
 
 NODE_EXTERN void EmitBeforeExit(Environment* env);
@@ -418,48 +423,46 @@ NODE_DEPRECATED("Use v8::Date::New() directly",
 #define NODE_UNIXTIME_V8 node::NODE_UNIXTIME_V8
 NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
                 inline double NODE_V8_UNIXTIME(v8::Local<v8::Date> date) {
-  return date->ValueOf() / 1000;
-})
+                  return date->ValueOf() / 1000;
+                })
 #define NODE_V8_UNIXTIME node::NODE_V8_UNIXTIME
 
-#define NODE_DEFINE_CONSTANT(target, constant)                                \
-  do {                                                                        \
-    v8::Isolate* isolate = target->GetIsolate();                              \
-    v8::Local<v8::Context> context = isolate->GetCurrentContext();            \
-    v8::Local<v8::String> constant_name =                                     \
-        v8::String::NewFromUtf8(isolate, #constant,                           \
-            v8::NewStringType::kInternalized).ToLocalChecked();               \
-    v8::Local<v8::Number> constant_value =                                    \
-        v8::Number::New(isolate, static_cast<double>(constant));              \
-    v8::PropertyAttribute constant_attributes =                               \
-        static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete);    \
-    (target)->DefineOwnProperty(context,                                      \
-                                constant_name,                                \
-                                constant_value,                               \
-                                constant_attributes).Check();                 \
-  }                                                                           \
-  while (0)
+#define NODE_DEFINE_CONSTANT(target, constant)                                 \
+  do {                                                                         \
+    v8::Isolate* isolate = target->GetIsolate();                               \
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();             \
+    v8::Local<v8::String> constant_name =                                      \
+        v8::String::NewFromUtf8(                                               \
+            isolate, #constant, v8::NewStringType::kInternalized)              \
+            .ToLocalChecked();                                                 \
+    v8::Local<v8::Number> constant_value =                                     \
+        v8::Number::New(isolate, static_cast<double>(constant));               \
+    v8::PropertyAttribute constant_attributes =                                \
+        static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete);     \
+    (target)                                                                   \
+        ->DefineOwnProperty(                                                   \
+            context, constant_name, constant_value, constant_attributes)       \
+        .Check();                                                              \
+  } while (0)
 
-#define NODE_DEFINE_HIDDEN_CONSTANT(target, constant)                         \
-  do {                                                                        \
-    v8::Isolate* isolate = target->GetIsolate();                              \
-    v8::Local<v8::Context> context = isolate->GetCurrentContext();            \
-    v8::Local<v8::String> constant_name =                                     \
-        v8::String::NewFromUtf8(isolate, #constant,                           \
-                                v8::NewStringType::kInternalized)             \
-                                  .ToLocalChecked();                          \
-    v8::Local<v8::Number> constant_value =                                    \
-        v8::Number::New(isolate, static_cast<double>(constant));              \
-    v8::PropertyAttribute constant_attributes =                               \
-        static_cast<v8::PropertyAttribute>(v8::ReadOnly |                     \
-                                           v8::DontDelete |                   \
-                                           v8::DontEnum);                     \
-    (target)->DefineOwnProperty(context,                                      \
-                                constant_name,                                \
-                                constant_value,                               \
-                                constant_attributes).Check();                 \
-  }                                                                           \
-  while (0)
+#define NODE_DEFINE_HIDDEN_CONSTANT(target, constant)                          \
+  do {                                                                         \
+    v8::Isolate* isolate = target->GetIsolate();                               \
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();             \
+    v8::Local<v8::String> constant_name =                                      \
+        v8::String::NewFromUtf8(                                               \
+            isolate, #constant, v8::NewStringType::kInternalized)              \
+            .ToLocalChecked();                                                 \
+    v8::Local<v8::Number> constant_value =                                     \
+        v8::Number::New(isolate, static_cast<double>(constant));               \
+    v8::PropertyAttribute constant_attributes =                                \
+        static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete |     \
+                                           v8::DontEnum);                      \
+    (target)                                                                   \
+        ->DefineOwnProperty(                                                   \
+            context, constant_name, constant_value, constant_attributes)       \
+        .Check();                                                              \
+  } while (0)
 
 // Used to be a macro, hence the uppercase name.
 inline void NODE_SET_METHOD(v8::Local<v8::Template> recv,
@@ -467,10 +470,11 @@ inline void NODE_SET_METHOD(v8::Local<v8::Template> recv,
                             v8::FunctionCallback callback) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::HandleScope handle_scope(isolate);
-  v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(isolate,
-                                                                callback);
-  v8::Local<v8::String> fn_name = v8::String::NewFromUtf8(isolate, name,
-      v8::NewStringType::kInternalized).ToLocalChecked();
+  v8::Local<v8::FunctionTemplate> t =
+      v8::FunctionTemplate::New(isolate, callback);
+  v8::Local<v8::String> fn_name =
+      v8::String::NewFromUtf8(isolate, name, v8::NewStringType::kInternalized)
+          .ToLocalChecked();
   t->SetClassName(fn_name);
   recv->Set(fn_name, t);
 }
@@ -482,11 +486,12 @@ inline void NODE_SET_METHOD(v8::Local<v8::Object> recv,
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
-  v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(isolate,
-                                                                callback);
+  v8::Local<v8::FunctionTemplate> t =
+      v8::FunctionTemplate::New(isolate, callback);
   v8::Local<v8::Function> fn = t->GetFunction(context).ToLocalChecked();
-  v8::Local<v8::String> fn_name = v8::String::NewFromUtf8(isolate, name,
-      v8::NewStringType::kInternalized).ToLocalChecked();
+  v8::Local<v8::String> fn_name =
+      v8::String::NewFromUtf8(isolate, name, v8::NewStringType::kInternalized)
+          .ToLocalChecked();
   fn->SetName(fn_name);
   recv->Set(context, fn_name, fn).Check();
 }
@@ -502,15 +507,25 @@ inline void NODE_SET_PROTOTYPE_METHOD(v8::Local<v8::FunctionTemplate> recv,
   v8::Local<v8::Signature> s = v8::Signature::New(isolate, recv);
   v8::Local<v8::FunctionTemplate> t =
       v8::FunctionTemplate::New(isolate, callback, v8::Local<v8::Value>(), s);
-  v8::Local<v8::String> fn_name = v8::String::NewFromUtf8(isolate, name,
-      v8::NewStringType::kInternalized).ToLocalChecked();
+  v8::Local<v8::String> fn_name =
+      v8::String::NewFromUtf8(isolate, name, v8::NewStringType::kInternalized)
+          .ToLocalChecked();
   t->SetClassName(fn_name);
   recv->PrototypeTemplate()->Set(fn_name, t);
 }
 #define NODE_SET_PROTOTYPE_METHOD node::NODE_SET_PROTOTYPE_METHOD
 
 // BINARY is a deprecated alias of LATIN1.
-enum encoding {ASCII, UTF8, BASE64, UCS2, BINARY, HEX, BUFFER, LATIN1 = BINARY};
+enum encoding {
+  ASCII,
+  UTF8,
+  BASE64,
+  UCS2,
+  BINARY,
+  HEX,
+  BUFFER,
+  LATIN1 = BINARY
+};
 
 NODE_EXTERN enum encoding ParseEncoding(
     v8::Isolate* isolate,
@@ -552,21 +567,16 @@ NODE_EXTERN v8::Local<v8::Value> WinapiErrnoException(
 
 const char* signo_string(int errorno);
 
+typedef void (*addon_register_func)(v8::Local<v8::Object> exports,
+                                    v8::Local<v8::Value> module,
+                                    void* priv);
 
-typedef void (*addon_register_func)(
-    v8::Local<v8::Object> exports,
-    v8::Local<v8::Value> module,
-    void* priv);
+typedef void (*addon_context_register_func)(v8::Local<v8::Object> exports,
+                                            v8::Local<v8::Value> module,
+                                            v8::Local<v8::Context> context,
+                                            void* priv);
 
-typedef void (*addon_context_register_func)(
-    v8::Local<v8::Object> exports,
-    v8::Local<v8::Value> module,
-    v8::Local<v8::Context> context,
-    void* priv);
-
-enum ModuleFlags {
-  kLinked = 0x02
-};
+enum ModuleFlags { kLinked = 0x02 };
 
 struct node_module {
   int nm_version;
@@ -583,85 +593,79 @@ struct node_module {
 extern "C" NODE_EXTERN void node_module_register(void* mod);
 
 #ifdef _WIN32
-# define NODE_MODULE_EXPORT __declspec(dllexport)
+#define NODE_MODULE_EXPORT __declspec(dllexport)
 #else
-# define NODE_MODULE_EXPORT __attribute__((visibility("default")))
+#define NODE_MODULE_EXPORT __attribute__((visibility("default")))
 #endif
 
 #ifdef NODE_SHARED_MODE
-# define NODE_CTOR_PREFIX
+#define NODE_CTOR_PREFIX
 #else
-# define NODE_CTOR_PREFIX static
+#define NODE_CTOR_PREFIX static
 #endif
 
 #if defined(_MSC_VER)
 #pragma section(".CRT$XCU", read)
-#define NODE_C_CTOR(fn)                                               \
-  NODE_CTOR_PREFIX void __cdecl fn(void);                             \
-  __declspec(dllexport, allocate(".CRT$XCU"))                         \
-      void (__cdecl*fn ## _)(void) = fn;                              \
+#define NODE_C_CTOR(fn)                                                        \
+  NODE_CTOR_PREFIX void __cdecl fn(void);                                      \
+  __declspec(dllexport, allocate(".CRT$XCU")) void(__cdecl * fn##_)(void) =    \
+      fn;                                                                      \
   NODE_CTOR_PREFIX void __cdecl fn(void)
 #else
-#define NODE_C_CTOR(fn)                                               \
-  NODE_CTOR_PREFIX void fn(void) __attribute__((constructor));        \
+#define NODE_C_CTOR(fn)                                                        \
+  NODE_CTOR_PREFIX void fn(void) __attribute__((constructor));                 \
   NODE_CTOR_PREFIX void fn(void)
 #endif
 
-#define NODE_MODULE_X(modname, regfunc, priv, flags)                  \
-  extern "C" {                                                        \
-    static node::node_module _module =                                \
-    {                                                                 \
-      NODE_MODULE_VERSION,                                            \
-      flags,                                                          \
-      NULL,  /* NOLINT (readability/null_usage) */                    \
-      __FILE__,                                                       \
-      (node::addon_register_func) (regfunc),                          \
-      NULL,  /* NOLINT (readability/null_usage) */                    \
-      NODE_STRINGIFY(modname),                                        \
-      priv,                                                           \
-      NULL   /* NOLINT (readability/null_usage) */                    \
-    };                                                                \
-    NODE_C_CTOR(_register_ ## modname) {                              \
-      node_module_register(&_module);                                 \
-    }                                                                 \
+#define NODE_MODULE_X(modname, regfunc, priv, flags)                           \
+  extern "C" {                                                                 \
+  static node::node_module _module = {                                         \
+      NODE_MODULE_VERSION,                                                     \
+      flags,                                                                   \
+      NULL, /* NOLINT (readability/null_usage) */                              \
+      __FILE__,                                                                \
+      (node::addon_register_func)(regfunc),                                    \
+      NULL, /* NOLINT (readability/null_usage) */                              \
+      NODE_STRINGIFY(modname),                                                 \
+      priv,                                                                    \
+      NULL /* NOLINT (readability/null_usage) */                               \
+  };                                                                           \
+  NODE_C_CTOR(_register_##modname) { node_module_register(&_module); }         \
   }
 
-#define NODE_MODULE_CONTEXT_AWARE_X(modname, regfunc, priv, flags)    \
-  extern "C" {                                                        \
-    static node::node_module _module =                                \
-    {                                                                 \
-      NODE_MODULE_VERSION,                                            \
-      flags,                                                          \
-      NULL,  /* NOLINT (readability/null_usage) */                    \
-      __FILE__,                                                       \
-      NULL,  /* NOLINT (readability/null_usage) */                    \
-      (node::addon_context_register_func) (regfunc),                  \
-      NODE_STRINGIFY(modname),                                        \
-      priv,                                                           \
-      NULL  /* NOLINT (readability/null_usage) */                     \
-    };                                                                \
-    NODE_C_CTOR(_register_ ## modname) {                              \
-      node_module_register(&_module);                                 \
-    }                                                                 \
+#define NODE_MODULE_CONTEXT_AWARE_X(modname, regfunc, priv, flags)             \
+  extern "C" {                                                                 \
+  static node::node_module _module = {                                         \
+      NODE_MODULE_VERSION,                                                     \
+      flags,                                                                   \
+      NULL, /* NOLINT (readability/null_usage) */                              \
+      __FILE__,                                                                \
+      NULL, /* NOLINT (readability/null_usage) */                              \
+      (node::addon_context_register_func)(regfunc),                            \
+      NODE_STRINGIFY(modname),                                                 \
+      priv,                                                                    \
+      NULL /* NOLINT (readability/null_usage) */                               \
+  };                                                                           \
+  NODE_C_CTOR(_register_##modname) { node_module_register(&_module); }         \
   }
 
 // Usage: `NODE_MODULE(NODE_GYP_MODULE_NAME, InitializerFunction)`
 // If no NODE_MODULE is declared, Node.js looks for the well-known
 // symbol `node_register_module_v${NODE_MODULE_VERSION}`.
-#define NODE_MODULE(modname, regfunc)                                 \
+#define NODE_MODULE(modname, regfunc)                                          \
   NODE_MODULE_X(modname, regfunc, NULL, 0)  // NOLINT (readability/null_usage)
 
-#define NODE_MODULE_CONTEXT_AWARE(modname, regfunc)                   \
-  /* NOLINTNEXTLINE (readability/null_usage) */                       \
+#define NODE_MODULE_CONTEXT_AWARE(modname, regfunc)                            \
+  /* NOLINTNEXTLINE (readability/null_usage) */                                \
   NODE_MODULE_CONTEXT_AWARE_X(modname, regfunc, NULL, 0)
 
 // Embedders can use this type of binding for statically linked native bindings.
 // It is used the same way addon bindings are used, except that linked bindings
 // can be accessed through `process._linkedBinding(modname)`.
-#define NODE_MODULE_LINKED(modname, regfunc)                               \
-  /* NOLINTNEXTLINE (readability/null_usage) */                            \
-  NODE_MODULE_CONTEXT_AWARE_X(modname, regfunc, NULL,                      \
-                              node::ModuleFlags::kLinked)
+#define NODE_MODULE_LINKED(modname, regfunc)                                   \
+  /* NOLINTNEXTLINE (readability/null_usage) */                                \
+  NODE_MODULE_CONTEXT_AWARE_X(                                                 \
+      modname, regfunc, NULL, node::ModuleFlags::kLinked)
 
 /*
  * For backward compatibility in add-on modules.
@@ -670,24 +674,22 @@ extern "C" NODE_EXTERN void node_module_register(void* mod);
 
 #define NODE_MODULE_INITIALIZER_BASE node_register_module_v
 
-#define NODE_MODULE_INITIALIZER_X(base, version)                      \
-    NODE_MODULE_INITIALIZER_X_HELPER(base, version)
+#define NODE_MODULE_INITIALIZER_X(base, version)                               \
+  NODE_MODULE_INITIALIZER_X_HELPER(base, version)
 
 #define NODE_MODULE_INITIALIZER_X_HELPER(base, version) base##version
 
-#define NODE_MODULE_INITIALIZER                                       \
-  NODE_MODULE_INITIALIZER_X(NODE_MODULE_INITIALIZER_BASE,             \
-      NODE_MODULE_VERSION)
+#define NODE_MODULE_INITIALIZER                                                \
+  NODE_MODULE_INITIALIZER_X(NODE_MODULE_INITIALIZER_BASE, NODE_MODULE_VERSION)
 
-#define NODE_MODULE_INIT()                                            \
-  extern "C" NODE_MODULE_EXPORT void                                  \
-  NODE_MODULE_INITIALIZER(v8::Local<v8::Object> exports,              \
-                          v8::Local<v8::Value> module,                \
-                          v8::Local<v8::Context> context);            \
-  NODE_MODULE_CONTEXT_AWARE(NODE_GYP_MODULE_NAME,                     \
-                            NODE_MODULE_INITIALIZER)                  \
-  void NODE_MODULE_INITIALIZER(v8::Local<v8::Object> exports,         \
-                               v8::Local<v8::Value> module,           \
+#define NODE_MODULE_INIT()                                                     \
+  extern "C" NODE_MODULE_EXPORT void NODE_MODULE_INITIALIZER(                  \
+      v8::Local<v8::Object> exports,                                           \
+      v8::Local<v8::Value> module,                                             \
+      v8::Local<v8::Context> context);                                         \
+  NODE_MODULE_CONTEXT_AWARE(NODE_GYP_MODULE_NAME, NODE_MODULE_INITIALIZER)     \
+  void NODE_MODULE_INITIALIZER(v8::Local<v8::Object> exports,                  \
+                               v8::Local<v8::Value> module,                    \
                                v8::Local<v8::Context> context)
 
 // Allows embedders to add a binding to the current Environment* that can be
@@ -715,13 +717,10 @@ NODE_DEPRECATED(
  * is called after the event loop exits, but before the VM is disposed.
  * Callbacks are run in reverse order of registration, i.e. newest first.
  */
-NODE_EXTERN void AtExit(Environment* env,
-                        void (*cb)(void* arg),
-                        void* arg);
+NODE_EXTERN void AtExit(Environment* env, void (*cb)(void* arg), void* arg);
 NODE_DEPRECATED(
     "Use the three-argument variant of AtExit() or AddEnvironmentCleanupHook()",
-    inline void AtExit(Environment* env,
-                       void (*cb)(void* arg)) {
+    inline void AtExit(Environment* env, void (*cb)(void* arg)) {
       AtExit(env, cb, nullptr);
     })
 
@@ -777,8 +776,7 @@ NODE_EXTERN async_context EmitAsyncInit(v8::Isolate* isolate,
  * `GetCurrentEnvironment()`. */
 NODE_EXTERN void EmitAsyncDestroy(v8::Isolate* isolate,
                                   async_context asyncContext);
-NODE_EXTERN void EmitAsyncDestroy(Environment* env,
-                                  async_context asyncContext);
+NODE_EXTERN void EmitAsyncDestroy(Environment* env, async_context asyncContext);
 
 class InternalCallbackScope;
 
@@ -861,20 +859,17 @@ class NODE_EXTERN AsyncResource {
   AsyncResource(const AsyncResource&) = delete;
   void operator=(const AsyncResource&) = delete;
 
-  v8::MaybeLocal<v8::Value> MakeCallback(
-      v8::Local<v8::Function> callback,
-      int argc,
-      v8::Local<v8::Value>* argv);
+  v8::MaybeLocal<v8::Value> MakeCallback(v8::Local<v8::Function> callback,
+                                         int argc,
+                                         v8::Local<v8::Value>* argv);
 
-  v8::MaybeLocal<v8::Value> MakeCallback(
-      const char* method,
-      int argc,
-      v8::Local<v8::Value>* argv);
+  v8::MaybeLocal<v8::Value> MakeCallback(const char* method,
+                                         int argc,
+                                         v8::Local<v8::Value>* argv);
 
-  v8::MaybeLocal<v8::Value> MakeCallback(
-      v8::Local<v8::String> symbol,
-      int argc,
-      v8::Local<v8::Value>* argv);
+  v8::MaybeLocal<v8::Value> MakeCallback(v8::Local<v8::String> symbol,
+                                         int argc,
+                                         v8::Local<v8::Value>* argv);
 
   v8::Local<v8::Object> get_resource();
   async_id get_async_id() const;
@@ -891,6 +886,20 @@ class NODE_EXTERN AsyncResource {
   v8::Global<v8::Object> resource_;
   async_context async_context_;
 };
+
+// class NODE_EXTERN NodeException : std::runtime_error
+//{
+//  public:
+//    NodeException(int code, const char *message)
+//      : std::runtime_error(message)
+//      , code(code)
+//    {
+//
+//    }
+//
+//  private:
+//    int code;
+//};
 
 #ifndef _WIN32
 // Register a signal handler without interrupting any handlers that node

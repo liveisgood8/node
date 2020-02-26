@@ -8660,6 +8660,12 @@ class V8_EXPORT Isolate {
   void CancelTerminateExecution();
 
   /**
+   * [NEXUS]
+   * Clear pending exception queue
+   */
+  void ClearPendingException();
+
+  /**
    * Request V8 to interrupt long running JavaScript code and invoke
    * the given |callback| passing the given |data| to it. After |callback|
    * returns control will be returned to the JavaScript code.
