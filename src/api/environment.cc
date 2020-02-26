@@ -87,10 +87,34 @@ static void HostCleanupFinalizationGroupCallback(
 }
 
 void* NodeArrayBufferAllocator::Allocate(size_t size) {
+  void* ret;
   if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
-    return UncheckedCalloc(size);
+    ret = UncheckedCalloc(size);
   else
-    return UncheckedMalloc(size);
+    ret = UncheckedMalloc(size);
+  if (LIKELY(ret != nullptr))
+    total_mem_usage_.fetch_add(size, std::memory_order_relaxed);
+  return ret;
+}
+
+void* NodeArrayBufferAllocator::AllocateUninitialized(size_t size) {
+  void* ret = node::UncheckedMalloc(size);
+  if (LIKELY(ret != nullptr))
+    total_mem_usage_.fetch_add(size, std::memory_order_relaxed);
+  return ret;
+}
+
+void* NodeArrayBufferAllocator::Reallocate(
+    void* data, size_t old_size, size_t size) {
+  void* ret = UncheckedRealloc<char>(static_cast<char*>(data), size);
+  if (LIKELY(ret != nullptr) || UNLIKELY(size == 0))
+    total_mem_usage_.fetch_add(size - old_size, std::memory_order_relaxed);
+  return ret;
+}
+
+void NodeArrayBufferAllocator::Free(void* data, size_t size) {
+  total_mem_usage_.fetch_sub(size, std::memory_order_relaxed);
+  free(data);
 }
 
 DebuggingArrayBufferAllocator::~DebuggingArrayBufferAllocator() {
@@ -140,11 +164,13 @@ void* DebuggingArrayBufferAllocator::Reallocate(void* data,
 
 void DebuggingArrayBufferAllocator::RegisterPointer(void* data, size_t size) {
   Mutex::ScopedLock lock(mutex_);
+  NodeArrayBufferAllocator::RegisterPointer(data, size);
   RegisterPointerInternal(data, size);
 }
 
 void DebuggingArrayBufferAllocator::UnregisterPointer(void* data, size_t size) {
   Mutex::ScopedLock lock(mutex_);
+  NodeArrayBufferAllocator::UnregisterPointer(data, size);
   UnregisterPointerInternal(data, size);
 }
 
@@ -366,11 +392,6 @@ MultiIsolatePlatform* CreatePlatform(
   return new NodePlatform(thread_pool_size, tracing_controller);
 }
 
-MultiIsolatePlatform* InitializeV8Platform(int thread_pool_size) {
-  per_process::v8_platform.Initialize(thread_pool_size);
-  return per_process::v8_platform.Platform();
-}
-
 void FreePlatform(MultiIsolatePlatform* platform) {
   delete platform;
 }
@@ -467,6 +488,7 @@ bool InitializeContextForSnapshot(Local<Context> context) {
 
     static const char* context_files[] = {"internal/per_context/primordials",
                                           "internal/per_context/domexception",
+                                          "internal/per_context/messageport",
                                           nullptr};
 
     for (const char** module = context_files; *module != nullptr; module++) {

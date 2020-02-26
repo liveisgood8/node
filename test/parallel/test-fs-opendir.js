@@ -91,23 +91,27 @@ assert.throws(function() {
   fs.opendirSync(__filename);
 }, /Error: ENOTDIR: not a directory/);
 
+assert.throws(function() {
+  fs.opendir(__filename);
+}, /TypeError \[ERR_INVALID_CALLBACK\]: Callback must be a function/);
+
 fs.opendir(__filename, common.mustCall(function(e) {
   assert.strictEqual(e.code, 'ENOTDIR');
 }));
 
 [false, 1, [], {}, null, undefined].forEach((i) => {
-  common.expectsError(
+  assert.throws(
     () => fs.opendir(i, common.mustNotCall()),
     {
       code: 'ERR_INVALID_ARG_TYPE',
-      type: TypeError
+      name: 'TypeError'
     }
   );
-  common.expectsError(
+  assert.throws(
     () => fs.opendirSync(i),
     {
       code: 'ERR_INVALID_ARG_TYPE',
-      type: TypeError
+      name: 'TypeError'
     }
   );
 });

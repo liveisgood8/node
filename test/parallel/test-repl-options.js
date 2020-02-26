@@ -62,6 +62,7 @@ assert.strictEqual(r1.useColors, r1.rli.terminal);
 
 // 2
 function writer() {}
+
 function evaler() {}
 const r2 = repl.start({
   input: stream,
@@ -100,9 +101,9 @@ const r3 = () => repl.start({
   eval: true
 });
 
-common.expectsError(r3, {
+assert.throws(r3, {
   code: 'ERR_INVALID_REPL_EVAL_CONFIG',
-  type: TypeError,
+  name: 'TypeError',
   message: 'Cannot specify both "breakEvalOnSigint" and "eval" for REPL'
 });
 

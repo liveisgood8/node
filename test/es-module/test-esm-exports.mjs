@@ -20,8 +20,6 @@ import fromInside from '../fixtures/node_modules/pkgexports/lib/hole.js';
     // Fallbacks
     ['pkgexports/fallbackdir/asdf.js', { default: 'asdf' }],
     ['pkgexports/fallbackfile', { default: 'asdf' }],
-    // Dot main
-    ['pkgexports', { default: 'asdf' }],
     // Conditional split for require
     ['pkgexports/condition', isRequire ? { default: 'encoded path' } :
       { default: 'asdf' }],
@@ -29,7 +27,12 @@ import fromInside from '../fixtures/node_modules/pkgexports/lib/hole.js';
     ['pkgexports-sugar', { default: 'main' }],
     // Conditional object exports sugar
     ['pkgexports-sugar2', isRequire ? { default: 'not-exported' } :
-      { default: 'main' }]
+      { default: 'main' }],
+    // Resolve self
+    ['pkgexports/resolve-self', isRequire ?
+      { default: 'self-cjs' } : { default: 'self-mjs' }],
+    // Resolve self sugar
+    ['pkgexports-sugar', { default: 'main' }]
   ]);
 
   for (const [validSpecifier, expected] of validSpecifiers) {
@@ -49,7 +52,7 @@ import fromInside from '../fixtures/node_modules/pkgexports/lib/hole.js';
     ['pkgexports-number/hidden.js', './hidden.js'],
     // Sugar cases still encapsulate
     ['pkgexports-sugar/not-exported.js', './not-exported.js'],
-    ['pkgexports-sugar2/not-exported.js', './not-exported.js']
+    ['pkgexports-sugar2/not-exported.js', './not-exported.js'],
   ]);
 
   const invalidExports = new Map([
@@ -95,6 +98,15 @@ import fromInside from '../fixtures/node_modules/pkgexports/lib/hole.js';
     }));
   }
 
+  // Conditional export, even with no match, should still be used instead
+  // of falling back to main
+  if (isRequire) {
+    loadFixture('pkgexports-main').catch(mustCall((err) => {
+      strictEqual(err.code, 'MODULE_NOT_FOUND');
+      assertStartsWith(err.message, 'No valid export');
+    }));
+  }
+
   // Covering out bases - not a file is still not a file after dir mapping.
   loadFixture('pkgexports/sub/not-a-file.js').catch(mustCall((err) => {
     strictEqual(err.code, (isRequire ? '' : 'ERR_') + 'MODULE_NOT_FOUND');
@@ -108,6 +120,11 @@ import fromInside from '../fixtures/node_modules/pkgexports/lib/hole.js';
   loadFixture('pkgexports/sub/..%2F..%2Fbar.js').catch(mustCall((err) => {
     strictEqual(err.code, isRequire ? 'ERR_INVALID_FILE_URL_PATH' :
       'ERR_MODULE_NOT_FOUND');
+  }));
+
+  // Package export with numeric index properties must throw a validation error
+  loadFixture('pkgexports-numeric').catch(mustCall((err) => {
+    strictEqual(err.code, 'ERR_INVALID_PACKAGE_CONFIG');
   }));
 
   // Sugar conditional exports main mixed failure case
@@ -128,7 +145,7 @@ const { requireFromInside, importFromInside } = fromInside;
     // A file not visible from outside of the package
     ['../not-exported.js', { default: 'not-exported' }],
     // Part of the public interface
-    ['@pkgexports/name/valid-cjs', { default: 'asdf' }],
+    ['pkgexports/valid-cjs', { default: 'asdf' }],
   ]);
   for (const [validSpecifier, expected] of validSpecifiers) {
     if (validSpecifier === null) continue;
