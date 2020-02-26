@@ -115,7 +115,6 @@ NodeMainInstance::~NodeMainInstance() {
   isolate_->Exit();
 
   bool platform_finished = false;
-
   platform_->AddIsolateFinishedCallback(
       isolate_,
       [](void* data) { *static_cast<bool*>(data) = true; },
@@ -221,7 +220,6 @@ int NodeMainInstance::Run(
     }
   } catch (const NodeException&) {
     CLEAN_UP(false);
-    isolate_->ClearPendingException();
     throw;
   }
 

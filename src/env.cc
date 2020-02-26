@@ -995,7 +995,7 @@ void Environment::Exit(int exit_code) {
   }
   if (is_main_thread()) {
     stop_sub_worker_contexts();
-    throw NodeException(exit_code, "Environment::Exit called");
+    ExitEnv();
   } else {
     worker_context_->Exit(exit_code);
   }

@@ -166,7 +166,9 @@ Runner::~Runner() {
   if (snapshotData) {
     delete snapshotData;
   }
-  TearDownOncePerProcess();
+  if (per_process::v8_initialized) {
+    TearDownOncePerProcess();
+  }
 }
 
 }  // namespace node
