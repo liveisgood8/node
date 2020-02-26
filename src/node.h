@@ -264,12 +264,13 @@ class NODE_EXTERN ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
 class NODE_EXTERN NodeException : public std::runtime_error {
  public:
   explicit NodeException(int exitCode, const char* message)
-      : std::runtime_error(message) {}
+      : std::runtime_error(message)
+      , exitCode(exitCode) {}
 
   inline int GetExitCode() const { return exitCode; }
 
  private:
-  int exitCode = 0;
+  int exitCode;
 };
 
 // Legacy equivalents for ArrayBufferAllocator::Create().
