@@ -132,9 +132,9 @@ NodeMainInstance::~NodeMainInstance() {
 
 int NodeMainInstance::Run(
     const std::function<void(Environment* env)> envPreparator,
-    const std::function<void(Environment* env)> envHandler) {
+    const std::function<void(Environment* env, bool isRunSuccess)> envHandler) {
 #if HAVE_INSPECTOR && defined(__POSIX__) && !defined(NODE_SHARED_MODE)
-#define CLEAN_UP()                                                             \
+#define CLEAN_UP(is_run_success)                                               \
   env->set_can_call_into_js(false);                                            \
   env->stop_sub_worker_contexts();                                             \
   ResetStdio();                                                                \
@@ -149,10 +149,10 @@ int NodeMainInstance::Run(
   RunAtExit(env.get());                                                        \
   per_process::v8_platform.DrainVMTasks(isolate_);                             \
   if (envHandler) {                                                            \
-    envHandler(env.get());                                                     \
+    envHandler(env.get(), is_run_success);                                     \
   }
 #else
-#define CLEAN_UP()                                                             \
+#define CLEAN_UP(is_run_success)                                               \
   env->set_can_call_into_js(false);                                            \
   env->stop_sub_worker_contexts();                                             \
   ResetStdio();                                                                \
@@ -160,7 +160,7 @@ int NodeMainInstance::Run(
   RunAtExit(env.get());                                                        \
   per_process::v8_platform.DrainVMTasks(isolate_);                             \
   if (envHandler) {                                                            \
-    envHandler(env.get());                                                     \
+    envHandler(env.get(), is_run_success);                                     \
   }
 #endif
 
@@ -220,12 +220,12 @@ int NodeMainInstance::Run(
       exit_code = EmitExit(env.get());
     }
   } catch (const NodeException&) {
-    CLEAN_UP();
+    CLEAN_UP(false);
     isolate_->ClearPendingException();
     throw;
   }
 
-  CLEAN_UP();
+  CLEAN_UP(true);
   return exit_code;
 }
 

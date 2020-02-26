@@ -3,8 +3,10 @@
 
 #include "node.h"
 
-#include <memory>
-#include <vector>
+#include <string>
+#include <list>
+#include <map>
+
 
 namespace v8 {
 class Isolate;
@@ -13,31 +15,58 @@ class Isolate;
 struct uv_loop_s;
 
 struct SnapshotData;
-//struct NodeIsolate;
+// struct NodeIsolate;
 
 namespace node {
- class Environment;
+class Environment;
 
- class NODE_EXTERN Runner {
-  public:
-   Runner(const Runner&) = delete;
-   Runner& operator=(const Runner&) = delete;
+class NODE_EXTERN Runner {
+ public:
+  struct Variables {
+    std::map<std::string, int> integers;
+    std::map<std::string, bool> booleans;
+    std::map<std::string, std::string> strings;
+  };
 
-   static Runner* GetInstance();
+  struct InputData {
+    std::string scriptOrFilePath;
+    bool isFile = false;
+    bool isDebug = false;
+    Variables inputVariables;
+  };
 
-   void Init(int argc, const char** argv);
-   void RunScript(const char* script);
+  struct OutputData {
+    std::string error;
+    Variables outputVariables;
+  };
 
-  private:
-   Runner() = default;
-   ~Runner();
+ public:
+  Runner(const Runner&) = delete;
+  Runner& operator=(const Runner&) = delete;
 
-   SnapshotData* GetSnapshot() const;
-   //NodeIsolate* GetNodeIsolate(uv_loop_s* eventLoop);
+  static Runner* GetInstance();
 
-  private:
-   SnapshotData* snapshotData = nullptr;
- };
- }  // namespace node
+  void Init(int argc, const char** argv);
+  bool RunScript(const InputData *inputData, OutputData *outputData = nullptr);
+
+  void AppendLastError(const std::string& err);
+
+  // Data must be freed by user
+  InputData* CreateEmptyInputData() const;
+  OutputData* CreateEmptyOutputData() const;
+  void FreeInputData(InputData *data) const;
+  void FreeOutputData(OutputData *data) const;
+
+ private:
+  Runner() = default;
+  ~Runner();
+
+  SnapshotData* GetSnapshot() const;
+  // NodeIsolate* GetNodeIsolate(uv_loop_s* eventLoop);
+
+ private:
+  SnapshotData* snapshotData = nullptr;
+};
+}  // namespace node
 
 #endif  // NODE_RUNNER_H_
