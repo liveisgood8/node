@@ -143,7 +143,7 @@ node::Runner* GetRunner() {
 int RunNode(int argc, const char* argv[]) {
   try {
     return node::Start(argc, const_cast<char**>(argv));
-  } catch (const node::NodeException&) {
-    return 500;
+  } catch (const node::NodeException& err) {
+    return err.GetExitCode();
   }
 }

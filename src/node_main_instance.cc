@@ -69,21 +69,23 @@ NodeMainInstance::NodeMainInstance(
       isolate_data_(nullptr),
       event_loop(event_loop),
       owns_isolate_(true) {
-  params->array_buffer_allocator = array_buffer_allocator_.get();
+  Isolate::CreateParams createParamsCopy = *params;
+  createParamsCopy.array_buffer_allocator = array_buffer_allocator_.get();
+
   isolate_ = Isolate::Allocate();
   CHECK_NOT_NULL(isolate_);
   // Register the isolate on the platform before the isolate gets initialized,
   // so that the isolate can access the platform during initialization.
   platform->RegisterIsolate(isolate_, event_loop);
-  SetIsolateCreateParamsForNode(params);
-  Isolate::Initialize(isolate_, *params);
+  SetIsolateCreateParamsForNode(&createParamsCopy);
+  Isolate::Initialize(isolate_, createParamsCopy);
 
   Locker locker(isolate_);
   isolate_->Enter();
 
   deserialize_mode_ = per_isolate_data_indexes != nullptr;
   // If the indexes are not nullptr, we are not deserializing
-  CHECK_IMPLIES(deserialize_mode_, params->external_references != nullptr);
+  CHECK_IMPLIES(deserialize_mode_, createParamsCopy.external_references != nullptr);
   isolate_data_ = std::make_unique<IsolateData>(isolate_,
                                                 event_loop,
                                                 platform,
@@ -271,14 +273,11 @@ std::unique_ptr<Environment> NodeMainInstance::CreateMainEnvironment(
   // TODO(joyeecheung): when we snapshot the bootstrapped context,
   // the inspector and diagnostics setup should after after deserialization.
 #if HAVE_INSPECTOR
-  if ((!env->options()->has_eval_string &&
-      !env->options()->print_eval) ||
-      (
-       env->options()->get_debug_options()->inspector_enabled ||
-       env->options()->get_debug_options()->break_first_line ||
-       env->options()->get_debug_options()->break_node_first_line)) {
-    *exit_code = env->InitializeInspector({});
-  }
+  //static bool isInspectorInit = false;
+  //if (!isInspectorInit) {
+  //  *exit_code = env->InitializeInspector({});
+  //  isInspectorInit = true;
+  //}
 #endif
   if (*exit_code != 0) {
     return env;
