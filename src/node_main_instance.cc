@@ -223,6 +223,8 @@ int NodeMainInstance::Run(
     throw;
   }
 
+  exit_code = env->GetExitCode();
+
   CLEAN_UP(true);
   return exit_code;
 }

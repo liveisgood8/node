@@ -21,7 +21,7 @@ namespace node {
 static node::InitializationResult initResult;
 static thread_local std::string lastNodeError;
 
-void PrepareEnvironment(const Runner::InputData* data, Environment* env) {
+void Runner::PrepareEnvironment(const RunnerScript::InputData* data, Environment* env) {
   if (!data->scriptOrFilePath.empty()) {
     if (data->isFile) {
       // TODO Run js file
@@ -30,11 +30,66 @@ void PrepareEnvironment(const Runner::InputData* data, Environment* env) {
       env->options()->eval_string = data->scriptOrFilePath;
     }
   }
+  auto isolate = env->isolate();
+  auto context = env->context();
+  auto global = env->context()->Global();
+  for (const auto& pair : data->inputVariables.integers) {
+    global->Set(
+        context,
+        v8::String::NewFromUtf8(isolate, pair.first.c_str()).ToLocalChecked(),
+        v8::Int32::New(isolate, pair.second));
+  }
+  for (const auto& pair : data->inputVariables.booleans) {
+    global->Set(
+        context,
+        v8::String::NewFromUtf8(isolate, pair.first.c_str()).ToLocalChecked(),
+        v8::Boolean::New(isolate, pair.second));
+  }
+  for (const auto& pair : data->inputVariables.strings) {
+    global->Set(
+        context,
+        v8::String::NewFromUtf8(isolate, pair.first.c_str()).ToLocalChecked(),
+        v8::String::NewFromUtf8(isolate, pair.second.c_str()).ToLocalChecked());
+  }
 }
 
-void HandleEnvironment(Runner::OutputData* data, Environment* env, bool isRunSuccess) {
-  if (!data) {
+void Runner::HandleEnvironment(RunnerScript::OutputData* data, Environment* env, bool isRunSuccess) {
+  if (!data || !isRunSuccess) {
     return;
+  }
+
+  auto isolate = env->isolate();
+  auto context = env->context();
+  auto global = env->context()->Global();
+  for (auto& pair : data->outputVariables.integers) {
+    auto value = global
+                     ->Get(context,
+                           v8::String::NewFromUtf8(isolate, pair.first.c_str())
+                               .ToLocalChecked())
+                     .ToLocalChecked();
+    if (value->IsInt32()) {
+      pair.second = value->Int32Value(context).FromJust();
+    }
+  }
+  for (auto& pair : data->outputVariables.booleans) {
+    auto value = global
+                     ->Get(context,
+                           v8::String::NewFromUtf8(isolate, pair.first.c_str())
+                               .ToLocalChecked())
+                     .ToLocalChecked();
+    if (value->IsBoolean()) {
+      pair.second = value->BooleanValue(isolate);
+    }
+  }
+  for (auto& pair : data->outputVariables.strings) {
+    auto value = global
+                     ->Get(context,
+                           v8::String::NewFromUtf8(isolate, pair.first.c_str())
+                               .ToLocalChecked())
+                     .ToLocalChecked();
+    if (value->IsString()) {
+      pair.second = *v8::String::Utf8Value(isolate, value);
+    }
   }
 }
 
@@ -48,13 +103,12 @@ void Runner::Init(int argc, const char** argv) {
   snapshotData = GetSnapshot();
 }
 
-bool Runner::RunScript(const InputData* inputData, OutputData* outputData) {
-  DCHECK(inputData);
+void Runner::RunScript(RunnerScript *script) {
+  DCHECK(script);
 
   auto loop = std::unique_ptr<uv_loop_t>(new uv_loop_t());
   uv_loop_init(loop.get());
 
-  bool isSuccess = false;
   {
     NodeMainInstance main_instance(&snapshotData->params,
                                    loop.get(),
@@ -63,29 +117,25 @@ bool Runner::RunScript(const InputData* inputData, OutputData* outputData) {
                                    initResult.exec_args,
                                    snapshotData->indexes);
 
-    const auto envPreparator = [inputData](Environment* env) {
-      PrepareEnvironment(inputData, env);
+    const auto envPreparator = [this, script](Environment* env) {
+      PrepareEnvironment(&script->inputData, env);
     };
 
-    const auto envHandler = [outputData](Environment* env, bool isRunSucces) {
-      HandleEnvironment(outputData, env, isRunSucces);
+    const auto envHandler = [this, script](Environment* env, bool isRunSucces) {
+      HandleEnvironment(&script->outputData, env, isRunSucces);
     };
 
     try {
       int exit_code = main_instance.Run(envPreparator, envHandler);
-      isSuccess = exit_code == 0;
+      script->outputData.isSuccess = exit_code == 0;
     } catch (const NodeException& err) {
-      if (outputData) {
-        outputData->error = lastNodeError.empty() ? err.what() : lastNodeError;
-      }
+      script->outputData.error = lastNodeError.empty() ? err.what() : lastNodeError;
       lastNodeError.clear();
     }
   }
 
   int close_result = uv_loop_close(loop.get());
   DCHECK(close_result == 0);
-
-  return isSuccess;
 }
 
 SnapshotData* Runner::GetSnapshot() const {
@@ -108,25 +158,23 @@ void Runner::AppendLastError(const std::string& err) {
   lastNodeError += err;
 }
 
-
-Runner::InputData* Runner::CreateEmptyInputData() const {
-  return new InputData();
-}
-
-Runner::OutputData* Runner::CreateEmptyOutputData() const {
-  return new OutputData();
-}
-
-void Runner::FreeInputData(InputData* data) const {
-  DCHECK(data);
-  delete data;
-}
-
-
-void Runner::FreeOutputData(OutputData* data) const {
-  DCHECK(data);
-  delete data;
-}
+//InputData* Runner::CreateEmptyInputData() const {
+//  return new InputData();
+//}
+//
+//OutputData* Runner::CreateEmptyOutputData() const {
+//  return new OutputData();
+//}
+//
+//void Runner::FreeInputData(InputData* data) const {
+//  DCHECK(data);
+//  delete data;
+//}
+//
+//void Runner::FreeOutputData(OutputData* data) const {
+//  DCHECK(data);
+//  delete data;
+//}
 
 // NodeIsolate* Runner::GetNodeIsolate(uv_loop_s* eventLoop) {
 //  auto nIsolate = new NodeIsolate();

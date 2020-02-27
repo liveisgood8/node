@@ -2,11 +2,7 @@
 #define NODE_RUNNER_H_
 
 #include "node.h"
-
-#include <string>
-#include <list>
-#include <map>
-
+#include "node_runner_script.h"
 
 namespace v8 {
 class Isolate;
@@ -22,44 +18,31 @@ class Environment;
 
 class NODE_EXTERN Runner {
  public:
-  struct Variables {
-    std::map<std::string, int> integers;
-    std::map<std::string, bool> booleans;
-    std::map<std::string, std::string> strings;
-  };
-
-  struct InputData {
-    std::string scriptOrFilePath;
-    bool isFile = false;
-    bool isDebug = false;
-    Variables inputVariables;
-  };
-
-  struct OutputData {
-    std::string error;
-    Variables outputVariables;
-  };
-
- public:
   Runner(const Runner&) = delete;
   Runner& operator=(const Runner&) = delete;
 
   static Runner* GetInstance();
 
   void Init(int argc, const char** argv);
-  bool RunScript(const InputData *inputData, OutputData *outputData = nullptr);
+  void RunScript(RunnerScript *script);
 
   void AppendLastError(const std::string& err);
 
   // Data must be freed by user
-  InputData* CreateEmptyInputData() const;
-  OutputData* CreateEmptyOutputData() const;
-  void FreeInputData(InputData *data) const;
-  void FreeOutputData(OutputData *data) const;
+  //InputData* CreateEmptyInputData() const;
+  //OutputData* CreateEmptyOutputData() const;
+  //void FreeInputData(InputData *data) const;
+  //void FreeOutputData(OutputData *data) const;
 
  private:
   Runner() = default;
   ~Runner();
+
+  void PrepareEnvironment(const RunnerScript::InputData* data,
+                          Environment* env);
+  void HandleEnvironment(RunnerScript::OutputData* data,
+                         Environment* env,
+                         bool isRunSuccess);
 
   SnapshotData* GetSnapshot() const;
   // NodeIsolate* GetNodeIsolate(uv_loop_s* eventLoop);

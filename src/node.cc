@@ -900,8 +900,13 @@ void Init(int* argc,
     argv[i] = strdup(argv_[i].c_str());
 }
 
-InitializationResult InitializeOncePerProcess(int argc, char** argv) {
+void OnExit() {
   atexit(ResetStdio);
+  atexit(RunnerScript::FreeAll);
+}
+
+InitializationResult InitializeOncePerProcess(int argc, char** argv) {
+  OnExit();
   PlatformInit();
 
   CHECK_GT(argc, 0);

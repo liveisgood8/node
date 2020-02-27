@@ -314,7 +314,7 @@
   'targets': [
     {
       'target_name': '<(node_core_target_name)',
-      'type': 'executable',
+      'type': 'shared_library',
 
       'defines': [
         'NODE_WANT_INTERNALS=1',
@@ -578,7 +578,7 @@
         'src/node_url.cc',
         'src/node_util.cc',
         'src/node_runner.cc',
-        'src/node_runner.h',
+        'src/node_runner_script.cc',
         'src/node_v8.cc',
         'src/node_wasi.cc',
         'src/node_watchdog.cc',
@@ -656,6 +656,8 @@
         'src/node_platform.h',
         'src/node_process.h',
         'src/node_revert.h',
+        'src/node_runner.h',
+        'src/node_runner_script.h',
         'src/node_root_certs.h',
         'src/node_stat_watcher.h',
         'src/node_union_bytes.h',
