@@ -31,6 +31,11 @@ RunnerScript* RunnerScript::SetScript(const char* code) {
   return this;
 }
 
+RunnerScript* RunnerScript::EnableDebugger() {
+  inputData.isDebug = true;
+  return this;
+}
+
 RunnerScript* RunnerScript::AddInputInteger(const char* name, int value) {
   inputData.inputVariables.integers[name] = value;
   return this;

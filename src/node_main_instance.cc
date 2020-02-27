@@ -1,7 +1,7 @@
 #include <memory>
 
-#include "node_main_instance.h"
 #include "node_internals.h"
+#include "node_main_instance.h"
 #include "node_options-inl.h"
 #include "node_v8_platform-inl.h"
 #include "util-inl.h"
@@ -85,7 +85,8 @@ NodeMainInstance::NodeMainInstance(
 
   deserialize_mode_ = per_isolate_data_indexes != nullptr;
   // If the indexes are not nullptr, we are not deserializing
-  CHECK_IMPLIES(deserialize_mode_, createParamsCopy.external_references != nullptr);
+  CHECK_IMPLIES(deserialize_mode_,
+                createParamsCopy.external_references != nullptr);
   isolate_data_ = std::make_unique<IsolateData>(isolate_,
                                                 event_loop,
                                                 platform,
@@ -98,7 +99,6 @@ NodeMainInstance::NodeMainInstance(
     // complete.
     SetIsolateErrorHandlers(isolate_, s);
   }
-
 }
 
 void NodeMainInstance::Dispose() {
@@ -170,13 +170,10 @@ int NodeMainInstance::Run(
   HandleScope handle_scope(isolate_);
 
   int exit_code = 0;
-  std::unique_ptr<Environment> env = CreateMainEnvironment(&exit_code);
+  std::unique_ptr<Environment> env =
+      CreateMainEnvironment(&exit_code, envPreparator);
 
   try {
-    if (envPreparator) {
-      envPreparator(env.get());
-    }
-
     CHECK_NOT_NULL(env);
     Context::Scope context_scope(env->context());
 
@@ -185,7 +182,7 @@ int NodeMainInstance::Run(
         InternalCallbackScope callback_scope(
             env.get(),
             Object::New(isolate_),
-            { 1, 0 },
+            {1, 0},
             InternalCallbackScope::kSkipAsyncHooks);
         LoadEnvironment(env.get());
       }
@@ -234,7 +231,7 @@ int NodeMainInstance::Run(
 // TODO(joyeecheung): align this with the CreateEnvironment exposed in node.h
 // and the environment creation routine in workers somehow.
 std::unique_ptr<Environment> NodeMainInstance::CreateMainEnvironment(
-    int* exit_code) {
+    int* exit_code, const std::function<void(Environment* env)> envPreparator) {
   *exit_code = 0;  // Reset the exit code to 0
 
   HandleScope handle_scope(isolate_);
@@ -267,17 +264,20 @@ std::unique_ptr<Environment> NodeMainInstance::CreateMainEnvironment(
       static_cast<Environment::Flags>(Environment::kIsMainThread |
                                       Environment::kOwnsProcessState |
                                       Environment::kOwnsInspector));
+
   env->InitializeLibuv(per_process::v8_is_profiling);
   env->InitializeDiagnostics();
+
+  if (envPreparator) {
+    envPreparator(env.get());
+  }
 
   // TODO(joyeecheung): when we snapshot the bootstrapped context,
   // the inspector and diagnostics setup should after after deserialization.
 #if HAVE_INSPECTOR
-  //static bool isInspectorInit = false;
-  //if (!isInspectorInit) {
-  //  *exit_code = env->InitializeInspector({});
-  //  isInspectorInit = true;
-  //}
+  if (!env->options()->force_no_inspector_init) {
+    *exit_code = env->InitializeInspector({});
+  }
 #endif
   if (*exit_code != 0) {
     return env;

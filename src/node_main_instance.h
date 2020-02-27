@@ -56,13 +56,16 @@ class NodeMainInstance {
 
   // Start running the Node.js instances, return the exit code when finished.
   int Run(const std::function<void(Environment* env)> envPreparator = nullptr,
-          const std::function<void(Environment* env, bool isRunSuccess)> envHandler = nullptr);
+          const std::function<void(Environment* env, bool isRunSuccess)>
+              envHandler = nullptr);
 
   IsolateData* isolate_data() { return isolate_data_.get(); }
 
   // TODO(joyeecheung): align this with the CreateEnvironment exposed in node.h
   // and the environment creation routine in workers somehow.
-  std::unique_ptr<Environment> CreateMainEnvironment(int* exit_code);
+  std::unique_ptr<Environment> CreateMainEnvironment(
+      int* exit_code,
+      const std::function<void(Environment* env)> envPreparator = nullptr);
 
   // If nullptr is returned, the binary is not built with embedded
   // snapshot.
@@ -88,7 +91,7 @@ class NodeMainInstance {
   v8::Isolate* isolate_;
   MultiIsolatePlatform* platform_;
   std::unique_ptr<IsolateData> isolate_data_;
-  uv_loop_t *event_loop;
+  uv_loop_t* event_loop;
   bool owns_isolate_ = false;
   bool deserialize_mode_ = false;
 };

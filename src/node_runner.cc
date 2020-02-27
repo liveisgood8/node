@@ -21,7 +21,8 @@ namespace node {
 static node::InitializationResult initResult;
 static thread_local std::string lastNodeError;
 
-void Runner::PrepareEnvironment(const RunnerScript::InputData* data, Environment* env) {
+void Runner::PrepareEnvironment(const RunnerScript::InputData* data,
+                                Environment* env) {
   if (!data->scriptOrFilePath.empty()) {
     if (data->isFile) {
       // TODO Run js file
@@ -29,31 +30,41 @@ void Runner::PrepareEnvironment(const RunnerScript::InputData* data, Environment
       env->options()->has_eval_string = true;
       env->options()->eval_string = data->scriptOrFilePath;
     }
-  }
-  auto isolate = env->isolate();
-  auto context = env->context();
-  auto global = env->context()->Global();
-  for (const auto& pair : data->inputVariables.integers) {
-    global->Set(
-        context,
-        v8::String::NewFromUtf8(isolate, pair.first.c_str()).ToLocalChecked(),
-        v8::Int32::New(isolate, pair.second));
-  }
-  for (const auto& pair : data->inputVariables.booleans) {
-    global->Set(
-        context,
-        v8::String::NewFromUtf8(isolate, pair.first.c_str()).ToLocalChecked(),
-        v8::Boolean::New(isolate, pair.second));
-  }
-  for (const auto& pair : data->inputVariables.strings) {
-    global->Set(
-        context,
-        v8::String::NewFromUtf8(isolate, pair.first.c_str()).ToLocalChecked(),
-        v8::String::NewFromUtf8(isolate, pair.second.c_str()).ToLocalChecked());
+
+    if (!data->isDebug) {
+      env->options()->force_no_inspector_init = true;
+    } else {
+      env->options()->get_debug_options()->EnableBreakFirstLine();
+    }
+
+    auto isolate = env->isolate();
+    auto context = env->context();
+    auto global = env->context()->Global();
+    for (const auto& pair : data->inputVariables.integers) {
+      global->Set(
+          context,
+          v8::String::NewFromUtf8(isolate, pair.first.c_str()).ToLocalChecked(),
+          v8::Int32::New(isolate, pair.second));
+    }
+    for (const auto& pair : data->inputVariables.booleans) {
+      global->Set(
+          context,
+          v8::String::NewFromUtf8(isolate, pair.first.c_str()).ToLocalChecked(),
+          v8::Boolean::New(isolate, pair.second));
+    }
+    for (const auto& pair : data->inputVariables.strings) {
+      global->Set(
+          context,
+          v8::String::NewFromUtf8(isolate, pair.first.c_str()).ToLocalChecked(),
+          v8::String::NewFromUtf8(isolate, pair.second.c_str())
+              .ToLocalChecked());
+    }
   }
 }
 
-void Runner::HandleEnvironment(RunnerScript::OutputData* data, Environment* env, bool isRunSuccess) {
+void Runner::HandleEnvironment(RunnerScript::OutputData* data,
+                               Environment* env,
+                               bool isRunSuccess) {
   if (!data || !isRunSuccess) {
     return;
   }
@@ -103,7 +114,7 @@ void Runner::Init(int argc, const char** argv) {
   snapshotData = GetSnapshot();
 }
 
-void Runner::RunScript(RunnerScript *script) {
+void Runner::RunScript(RunnerScript* script) {
   DCHECK(script);
 
   auto loop = std::unique_ptr<uv_loop_t>(new uv_loop_t());
@@ -129,7 +140,8 @@ void Runner::RunScript(RunnerScript *script) {
       int exit_code = main_instance.Run(envPreparator, envHandler);
       script->outputData.isSuccess = exit_code == 0;
     } catch (const NodeException& err) {
-      script->outputData.error = lastNodeError.empty() ? err.what() : lastNodeError;
+      script->outputData.error =
+          lastNodeError.empty() ? err.what() : lastNodeError;
       lastNodeError.clear();
     }
   }
@@ -158,20 +170,20 @@ void Runner::AppendLastError(const std::string& err) {
   lastNodeError += err;
 }
 
-//InputData* Runner::CreateEmptyInputData() const {
+// InputData* Runner::CreateEmptyInputData() const {
 //  return new InputData();
 //}
 //
-//OutputData* Runner::CreateEmptyOutputData() const {
+// OutputData* Runner::CreateEmptyOutputData() const {
 //  return new OutputData();
 //}
 //
-//void Runner::FreeInputData(InputData* data) const {
+// void Runner::FreeInputData(InputData* data) const {
 //  DCHECK(data);
 //  delete data;
 //}
 //
-//void Runner::FreeOutputData(OutputData* data) const {
+// void Runner::FreeOutputData(OutputData* data) const {
 //  DCHECK(data);
 //  delete data;
 //}

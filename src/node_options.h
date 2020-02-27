@@ -136,6 +136,7 @@ class EnvironmentOptions : public Options {
   static const uint64_t kDefaultHeapProfInterval = 512 * 1024;
   uint64_t heap_prof_interval = kDefaultHeapProfInterval;
   bool heap_prof = false;
+  bool force_no_inspector_init = false;
 #endif  // HAVE_INSPECTOR
   std::string redirect_warnings;
   bool test_udp_no_try_send = false;

@@ -48,7 +48,10 @@ class NODE_EXTERN RunnerScript {
   RunnerScript& operator=(RunnerScript&&) = delete;
 
   RunnerScript* SetScript(const char* code);
+  // Must be only one active debugger at the same time
+  RunnerScript* EnableDebugger();
 
+  //
   RunnerScript* AddInputInteger(const char* name, int value);
   RunnerScript* AddInputBoolean(const char* name, bool value);
   RunnerScript* AddInputString(const char* name, const char* value);
