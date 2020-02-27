@@ -173,10 +173,10 @@ int NodeMainInstance::Run(
   std::unique_ptr<Environment> env =
       CreateMainEnvironment(&exit_code, envPreparator);
 
-  try {
-    CHECK_NOT_NULL(env);
-    Context::Scope context_scope(env->context());
+  CHECK_NOT_NULL(env);
+  Context::Scope context_scope(env->context());
 
+  try {
     if (exit_code == 0) {
       {
         InternalCallbackScope callback_scope(
@@ -222,7 +222,9 @@ int NodeMainInstance::Run(
     throw;
   }
 
-  exit_code = env->GetExitCode();
+  if (env->GetExitCode() != 0) {
+    exit_code = env->GetExitCode();
+  }
 
   CLEAN_UP(true);
   return exit_code;
