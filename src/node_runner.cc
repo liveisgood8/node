@@ -139,12 +139,16 @@ void Runner::RunScript(RunnerScript* script) {
     try {
       int exit_code = main_instance.Run(envPreparator, envHandler);
       script->outputData.isSuccess = exit_code == 0;
+      if (!script->outputData.isSuccess) {
+        script->outputData.error = lastNodeError;
+      }
     } catch (const NodeException& err) {
       script->outputData.error =
           lastNodeError.empty() ? err.what() : lastNodeError;
-      lastNodeError.clear();
     }
   }
+
+  lastNodeError.clear();
 
   int close_result = uv_loop_close(loop.get());
   DCHECK(close_result == 0);

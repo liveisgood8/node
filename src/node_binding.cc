@@ -88,6 +88,7 @@
   V(wasi)                                                                      \
   V(worker)                                                                    \
   V(watchdog)                                                                  \
+  V(logger)                                                                    \
   V(zlib)
 
 #define NODE_BUILTIN_MODULES(V)                                                \
