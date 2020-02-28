@@ -1,5 +1,6 @@
 #include "node_runner.h"
 
+#include "../deps/easylogging/easylogging++.h"
 #include "node.h"
 #include "node_internals.h"
 #include "node_main_instance.h"
@@ -58,6 +59,13 @@ void Runner::PrepareEnvironment(const RunnerScript::InputData* data,
           v8::String::NewFromUtf8(isolate, pair.first.c_str()).ToLocalChecked(),
           v8::String::NewFromUtf8(isolate, pair.second.c_str())
               .ToLocalChecked());
+    }
+
+    if (env->options()->lis_user_id != 0) {
+      global->Set(
+          context,
+          v8::String::NewFromUtf8(isolate, "LIS_USER_ID").ToLocalChecked(),
+          v8::Uint32::New(isolate, static_cast<uint32_t>(env->options()->lis_user_id)));
     }
   }
 }
@@ -148,6 +156,14 @@ void Runner::RunScript(RunnerScript* script) {
     }
   }
 
+  if (!script->outputData.error.empty()) {
+    LOG(ERROR) << "Runner::RunScript ["
+               << (script->inputData.scriptOrFilePath.length() > 50
+                       ? script->inputData.scriptOrFilePath.substr(0, 50) +
+                             "..."
+                       : script->inputData.scriptOrFilePath)
+               << "] failed with error : " << script->outputData.error;
+  }
   lastNodeError.clear();
 
   int close_result = uv_loop_close(loop.get());

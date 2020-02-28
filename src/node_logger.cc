@@ -23,8 +23,6 @@
 
 #include "../deps/easylogging/easylogging++.h"
 
-INITIALIZE_EASYLOGGINGPP
-
 namespace node {
 namespace logger {
 
@@ -38,19 +36,10 @@ using v8::Object;
 using v8::String;
 using v8::Value;
 
-static bool isLoggerInitialized = false;
-
 std::string Stringify(const FunctionCallbackInfo<Value>& args) {
   Environment* env = Environment::GetCurrent(args);
 
   std::string message = "[Script]: ";
-
-  const auto dateObject =
-      env->context()
-          ->Global()
-          ->Get(env->context(), FIXED_ONE_BYTE_STRING(env->isolate(), "Date"))
-          .ToLocalChecked()
-          .As<Object>();
 
   for (int i = 0; i < args.Length(); i++) {
     if (i != 0) {
@@ -58,7 +47,7 @@ std::string Stringify(const FunctionCallbackInfo<Value>& args) {
     }
 
     if (args[i]->IsObject() &&
-        !args[i]->InstanceOf(env->context(), dateObject).FromJust()) {
+        !args[i]->IsDate()) {
       auto jsString =
           JSON::Stringify(env->context(),
                           args[i],
@@ -96,35 +85,11 @@ static void Error(const FunctionCallbackInfo<Value>& args) {
   LOG(ERROR) << Stringify(args);
 }
 
-void InitializeLogger() {
-#ifdef WIN32
-  constexpr const char* kLogFileName = "Log\\lisnode.log";
-#else
-  constexpr const char* kLogFileName = "Log/lisnode.log";
-#endif  // WIN32
-
-  if (!isLoggerInitialized) {
-    el::Loggers::reconfigureAllLoggers(el::ConfigurationType::Filename,
-                                       kLogFileName);
-    el::Loggers::reconfigureAllLoggers(el::ConfigurationType::ToStandardOutput,
-                                       "false");
-    el::Loggers::reconfigureAllLoggers(el::ConfigurationType::Format,
-                                       "%datetime{%Y-%M-%d %H:%m:%s} %level: %msg");
-    el::Loggers::reconfigureAllLoggers(el::Level::Error,
-                                       el::ConfigurationType::Format,
-                                       "%datetime{%Y-%M-%d %H:%m:%s} %level: %func %msg");
-
-    isLoggerInitialized = true;
-  }
-}
-
 void Initialize(Local<Object> target,
                 Local<Value> unused,
                 Local<Context> context,
                 void* priv) {
   Environment* env = Environment::GetCurrent(context);
-
-  InitializeLogger();
 
   env->SetMethod(target, "trace", Trace);
   env->SetMethod(target, "debug", Debug);

@@ -23,6 +23,7 @@
 
 // ========== local headers ==========
 
+#include "../deps/easylogging/easylogging++.h"
 #include "debug_utils-inl.h"
 #include "env-inl.h"
 #include "memory_tracker-inl.h"
@@ -118,9 +119,40 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 
 #include <string>
 #include <vector>
+
+INITIALIZE_EASYLOGGINGPP
+
+void InitializeLogger() {
+  constexpr const char* kLogPath = "Log";
+  constexpr const char* kLogName = "lis_node.log";
+
+  if (!std::filesystem::exists(kLogPath)) {
+    std::filesystem::create_directory(kLogPath);
+  }
+
+  std::experimental::filesystem::path logFilePath(kLogPath);
+  logFilePath = logFilePath.append(kLogName);
+
+  el::Loggers::reconfigureAllLoggers(el::ConfigurationType::Filename,
+                                     logFilePath.string());
+  el::Loggers::reconfigureAllLoggers(el::ConfigurationType::MaxLogFileSize,
+                                     "52428800"); // 50 MB
+  el::Loggers::reconfigureAllLoggers(el::ConfigurationType::ToStandardOutput,
+                                     "false");
+  el::Loggers::reconfigureAllLoggers(
+      el::Level::Error, el::ConfigurationType::ToStandardOutput, "true");
+  el::Loggers::reconfigureAllLoggers(
+      el::ConfigurationType::Format,
+      "%datetime{%Y-%M-%d %H:%m:%s} %level: %msg");
+  el::Loggers::reconfigureAllLoggers(
+      el::Level::Error,
+      el::ConfigurationType::Format,
+      "%datetime{%Y-%M-%d %H:%m:%s} %level: %func %msg");
+}
 
 namespace node {
 
@@ -623,7 +655,6 @@ inline void PlatformInit() {
 #endif  // _WIN32
 }
 
-
 // Safe to call more than once and from signal handlers.
 void ResetStdio() {
   uv_tty_reset_mode();
@@ -896,8 +927,7 @@ void Init(int* argc,
   *exec_argv = Malloc<const char*>(*exec_argc);
   for (int i = 0; i < *exec_argc; ++i)
     (*exec_argv)[i] = strdup(exec_argv_[i].c_str());
-  for (int i = 0; i < *argc; ++i)
-    argv[i] = strdup(argv_[i].c_str());
+  for (int i = 0; i < *argc; ++i) argv[i] = strdup(argv_[i].c_str());
 }
 
 void OnExit() {
@@ -907,6 +937,7 @@ void OnExit() {
 
 InitializationResult InitializeOncePerProcess(int argc, char** argv) {
   OnExit();
+  InitializeLogger();
   PlatformInit();
 
   CHECK_GT(argc, 0);
@@ -1010,9 +1041,19 @@ Runner* GetRunner() {
   return Runner::GetInstance();
 }
 
+void LogStart(int argc, char** argv) {
+  LOG(INFO) << "Node::Start request with args: ";
+  for (int i = 0; i < argc; i++) {
+    LOG(INFO) << argv[i];
+  }
+}
+
 int Start(int argc, char** argv) {
   InitializationResult result = InitializeOncePerProcess(argc, argv);
+  LogStart(argc, argv);
+
   if (result.early_return) {
+    LOG(WARNING) << "Node::Start early return with code: " << result.exit_code;
     return result.exit_code;
   }
 
@@ -1041,10 +1082,23 @@ int Start(int argc, char** argv) {
                                    result.args,
                                    result.exec_args,
                                    indexes);
-    result.exit_code = main_instance.Run();
+    result.exit_code = main_instance.Run([](Environment *env) {
+      auto isolate = env->isolate();
+      auto context = env->context();
+      auto global = env->context()->Global();
+      if (env->options()->lis_user_id != 0) {
+        global->Set(
+            context,
+            v8::String::NewFromUtf8(isolate, "LIS_USER_ID").ToLocalChecked(),
+            v8::Uint32::New(
+                isolate, static_cast<uint32_t>(env->options()->lis_user_id)));
+      }
+   });
   }
 
   TearDownOncePerProcess();
+
+  LOG(WARNING) << "Node::Start done with code: " << result.exit_code;
   return result.exit_code;
 }
 

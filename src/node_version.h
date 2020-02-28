@@ -26,6 +26,8 @@
 #define NODE_MINOR_VERSION 9
 #define NODE_PATCH_VERSION 0
 
+#define NODE_LIS_VERSION 11
+
 #define NODE_VERSION_IS_LTS 0
 #define NODE_VERSION_LTS_CODENAME ""
 
@@ -34,6 +36,10 @@
 #ifndef NODE_STRINGIFY
 #define NODE_STRINGIFY(n) NODE_STRINGIFY_HELPER(n)
 #define NODE_STRINGIFY_HELPER(n) #n
+#endif
+
+#ifndef NODE_LIS_TAG
+#define NODE_LIS_TAG " - Lis v" NODE_STRINGIFY(NODE_LIS_VERSION) " by chemsoft"
 #endif
 
 #ifndef NODE_RELEASE
@@ -48,16 +54,20 @@
 # endif
 #else
 // NODE_TAG is passed without quotes when rc.exe is run from msbuild
-# define NODE_EXE_VERSION NODE_STRINGIFY(NODE_MAJOR_VERSION) "." \
-                          NODE_STRINGIFY(NODE_MINOR_VERSION) "." \
-                          NODE_STRINGIFY(NODE_PATCH_VERSION)     \
-                          NODE_STRINGIFY(NODE_TAG)
+# define NODE_EXE_VERSION NODE_STRINGIFY(NODE_MAJOR_VERSION) "."      \
+                          NODE_STRINGIFY(NODE_MINOR_VERSION) "."      \
+                          NODE_STRINGIFY(NODE_PATCH_VERSION)          \
+                          NODE_STRINGIFY(NODE_TAG)                    \
+                          NODE_STRINGIFY(NODE_LIS_TAG)
+
+
 #endif
 
-# define NODE_VERSION_STRING  NODE_STRINGIFY(NODE_MAJOR_VERSION) "." \
-                              NODE_STRINGIFY(NODE_MINOR_VERSION) "." \
-                              NODE_STRINGIFY(NODE_PATCH_VERSION)     \
-                              NODE_TAG
+# define NODE_VERSION_STRING  NODE_STRINGIFY(NODE_MAJOR_VERSION) "."  \
+                              NODE_STRINGIFY(NODE_MINOR_VERSION) "."  \
+                              NODE_STRINGIFY(NODE_PATCH_VERSION)      \
+                              NODE_TAG                                \
+                              NODE_LIS_TAG
 #ifndef NODE_EXE_VERSION
 # define NODE_EXE_VERSION NODE_VERSION_STRING
 #endif
