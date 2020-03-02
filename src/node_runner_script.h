@@ -47,6 +47,7 @@ class NODE_EXTERN RunnerScript {
   RunnerScript(RunnerScript&&) = delete;
   RunnerScript& operator=(RunnerScript&&) = delete;
 
+  // Convert to UTF-8 if code in Win-1251 encoding (only for windows)
   RunnerScript* SetScript(const char* code);
   // Must be only one active debugger at the same time
   RunnerScript* EnableDebugger();

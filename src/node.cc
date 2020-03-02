@@ -111,6 +111,9 @@
 #include <unistd.h>        // STDIN_FILENO, STDERR_FILENO
 #endif
 
+ #include <sys/types.h>
+ #include <sys/stat.h>
+
 // ========== global C++ headers ==========
 
 #include <cerrno>
@@ -119,7 +122,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <filesystem>
 
 #include <string>
 #include <vector>
@@ -130,15 +132,16 @@ void InitializeLogger() {
   constexpr const char* kLogPath = "Log";
   constexpr const char* kLogName = "lis_node.log";
 
-  if (!std::filesystem::exists(kLogPath)) {
-    std::filesystem::create_directory(kLogPath);
-  }
-
-  std::experimental::filesystem::path logFilePath(kLogPath);
-  logFilePath = logFilePath.append(kLogName);
+#if WIN32
+  _mkdir(kLogPath);
+  const std::string logFilePath = std::string(kLogPath) + "\\" + kLogName;
+#else
+  mkdir(kLogPath, 0777);
+  const std::string logFilePath = std::string(kLogPath) + "/" + kLogName;
+#endif
 
   el::Loggers::reconfigureAllLoggers(el::ConfigurationType::Filename,
-                                     logFilePath.string());
+                                     logFilePath);
   el::Loggers::reconfigureAllLoggers(el::ConfigurationType::MaxLogFileSize,
                                      "52428800"); // 50 MB
   el::Loggers::reconfigureAllLoggers(el::ConfigurationType::ToStandardOutput,

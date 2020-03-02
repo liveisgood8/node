@@ -558,6 +558,7 @@
         'src/node_http2.cc',
         'src/node_i18n.cc',
         'src/node_main_instance.cc',
+        'src/node_message.cc',
         'src/node_messaging.cc',
         'src/node_metadata.cc',
         'src/node_native_module.cc',
@@ -722,18 +723,6 @@
       #   Ususaly safe. Disable for `dep`, enable for `src`
       'msvs_disabled_warnings!': [4244],
 
-      'cflags_cc': [ '-std=c++17' ],
-
-      'xcode_settings': {
-        'OTHER_CPLUSPLUSFLAGS' : [ '-std=c++17' ],
-      },
-
-      'msvs_settings': {
-        'VCCLCompilerTool': {
-          'AdditionalOptions': [ '-std:c++17', ],
-        }
-      },
-      
       'conditions': [
         [ 'node_builtin_modules_path!=""', {
           'defines': [ 'NODE_BUILTIN_MODULES_PATH="<(node_builtin_modules_path)"' ]
