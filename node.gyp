@@ -315,7 +315,7 @@
   'targets': [
     {
       'target_name': '<(node_core_target_name)',
-      'type': 'shared_library',
+      'type': 'executable',
 
       'defines': [
         'NODE_WANT_INTERNALS=1',
