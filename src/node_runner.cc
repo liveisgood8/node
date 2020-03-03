@@ -1,10 +1,15 @@
 #include "node_runner.h"
 
+#ifndef WIN32
+#include <libgen.h>
+#endif
+
 #include "../deps/easylogging/easylogging++.h"
 #include "node.h"
 #include "node_internals.h"
 #include "node_main_instance.h"
 #include "node_v8_platform-inl.h"
+
 
 struct SnapshotData {
   v8::Isolate::CreateParams params;
@@ -65,7 +70,8 @@ void Runner::PrepareEnvironment(const RunnerScript::InputData* data,
       global->Set(
           context,
           v8::String::NewFromUtf8(isolate, "LIS_USER_ID").ToLocalChecked(),
-          v8::Uint32::New(isolate, static_cast<uint32_t>(env->options()->lis_user_id)));
+          v8::Uint32::New(isolate,
+                          static_cast<uint32_t>(env->options()->lis_user_id)));
     }
   }
 }
@@ -118,11 +124,18 @@ Runner* Runner::GetInstance() {
 }
 
 void Runner::Init(int argc, const char** argv) {
-  initResult = node::InitializeOncePerProcess(argc, const_cast<char**>(argv));
-  snapshotData = GetSnapshot();
+  if (!isInit) {
+    initResult = node::InitializeOncePerProcess(argc, const_cast<char**>(argv));
+    snapshotData = GetSnapshot();
+    isInit = true;
+  }
 }
 
 void Runner::RunScript(RunnerScript* script) {
+  if (!isInit) {
+    InitDefault();
+  }
+
   DCHECK(script);
 
   auto loop = std::unique_ptr<uv_loop_t>(new uv_loop_t());
@@ -249,6 +262,26 @@ Runner::~Runner() {
   if (per_process::v8_initialized) {
     TearDownOncePerProcess();
   }
+}
+
+void Runner::InitDefault() {
+#ifdef WIN32
+  char moduleFileName[MAX_PATH] = {0};
+  ::GetModuleFileNameA(NULL, moduleFileName, MAX_PATH);
+#else
+  const char* moduleFileName = "";
+  int count = readlink("/proc/self/exe", result, PATH_MAX);
+  if (count != -1) {
+    path = dirname(result);
+  }
+#endif  // WIN32
+  int argc = 4;
+  const char* argv[] = {moduleFileName,
+                        "--experimental-report",
+                        "--report-directory=Log\\",
+                        "--report-on-fatalerror"};
+  Init(argc, argv);
+  LOG(INFO) << "Runner initialized with default parameters";
 }
 
 }  // namespace node

@@ -38,6 +38,8 @@ class NODE_EXTERN Runner {
   Runner() = default;
   ~Runner();
 
+  void InitDefault();
+
   void PrepareEnvironment(const RunnerScript::InputData* data,
                           Environment* env);
   void HandleEnvironment(RunnerScript::OutputData* data,
@@ -49,6 +51,7 @@ class NODE_EXTERN Runner {
 
  private:
   SnapshotData* snapshotData = nullptr;
+  bool isInit = false;
 };
 }  // namespace node
 

@@ -19,6 +19,7 @@ static std::mutex freeDoneMutex;
 bool IsUtf8(const char* str);
 #ifdef WIN32
 std::string ToUtf8FromWin1251(const char* str);
+std::string ToWin1251FromUtf8(const char* str);
 #endif  // WIN32
 
 RunnerScript* RunnerScript::Create() {
@@ -40,6 +41,8 @@ RunnerScript* RunnerScript::SetScript(const char* code) {
 #ifdef WIN32
   if (!IsUtf8(code)) {
     inputData.scriptOrFilePath = ToUtf8FromWin1251(code);
+  } else {
+    inputData.scriptOrFilePath = code;
   }
 #else
   if (!IsUtf8(code)) {
@@ -71,6 +74,8 @@ RunnerScript* RunnerScript::AddInputString(const char* name,
 #ifdef WIN32
   if (!IsUtf8(value)) {
     inputData.inputVariables.strings[name] = ToUtf8FromWin1251(value);
+  } else {
+    inputData.inputVariables.strings[name] = value;
   }
 #else
   inputData.inputVariables.strings[name] = value;
@@ -125,6 +130,9 @@ const char* RunnerScript::GetError() const {
 bool RunnerScript::Run() {
   Runner::GetInstance()->RunScript(this);
   FreeDone();
+#ifdef WIN32
+  outputData.error = ToWin1251FromUtf8(outputData.error.c_str());
+#endif  // WIN32
   return outputData.isSuccess;
 }
 
@@ -249,6 +257,48 @@ std::string ToUtf8FromWin1251(const char* str) {
 
   return result;
 }
+
+std::string ToWin1251FromUtf8(const char* str) {
+  if (!IsUtf8(str)) {
+    return str;
+  }
+
+  bool error = false;
+
+  int result_u = ::MultiByteToWideChar(CP_UTF8, 0, str, -1, 0, 0);
+  if (!result_u) {
+    LOG(WARNING) << "Encoding: Ошибка при преобразовании в UTF-8 (ш. 1)";
+    return 0;
+  }
+
+  wchar_t* ures = new wchar_t[result_u];
+  if (!::MultiByteToWideChar(CP_UTF8, 0, str, -1, ures, result_u)) {
+    delete[] ures;
+    LOG(WARNING) << "Encoding: Ошибка при преобразовании в UTF-8 (ш. 2)";
+    return 0;
+  }
+
+  int result_c = ::WideCharToMultiByte(1251, 0, ures, -1, 0, 0, 0, 0);
+  if (!result_c) {
+    delete[] ures;
+    LOG(WARNING) << "Encoding: Ошибка при преобразовании в UTF-8 (ш. 3)";
+    return 0;
+  }
+
+  char* cres = new char[result_c];
+  if (!::WideCharToMultiByte(1251, 0, ures, -1, cres, result_c, 0, 0)) {
+    delete[] cres;
+    LOG(WARNING) << "Encoding: Ошибка при преобразовании в UTF-8 (ш. 4)";
+    return 0;
+  }
+  delete[] ures;
+
+  std::string result(cres);
+  delete[] cres;
+
+  return result;
+}
+
 #endif  // WIN32
 
 }  // namespace node
