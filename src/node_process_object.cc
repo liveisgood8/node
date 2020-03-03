@@ -89,6 +89,10 @@ MaybeLocal<Object> CreateProcessObject(Environment* env) {
                     "version",
                     FIXED_ONE_BYTE_STRING(env->isolate(), NODE_VERSION));
 
+  READONLY_PROPERTY(process,
+                    "nexusVersion",
+                    FIXED_ONE_BYTE_STRING(env->isolate(), NODE_NEXUS_VERSION_STRING));
+
   // process.versions
   Local<Object> versions = Object::New(env->isolate());
   READONLY_PROPERTY(process, "versions", versions);
