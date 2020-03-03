@@ -1,7 +1,7 @@
 #include "node_runner.h"
 
 #ifndef WIN32
-#include <libgen.h>
+#include <unistd.h>
 #endif
 
 #include "../deps/easylogging/easylogging++.h"
@@ -269,11 +269,8 @@ void Runner::InitDefault() {
   char moduleFileName[MAX_PATH] = {0};
   ::GetModuleFileNameA(NULL, moduleFileName, MAX_PATH);
 #else
-  const char* moduleFileName = "";
-  int count = readlink("/proc/self/exe", result, PATH_MAX);
-  if (count != -1) {
-    path = dirname(result);
-  }
+  char moduleFileName[PATH_MAX] = {0};
+  readlink("/proc/self/exe", moduleFileName, PATH_MAX);
 #endif  // WIN32
   int argc = 4;
   const char* argv[] = {moduleFileName,
