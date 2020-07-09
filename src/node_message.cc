@@ -106,7 +106,7 @@ Local<Object> CreateIconsConstObject(Environment *env) {
               Uint32::New(env->isolate(), MB_ICONASTERISK));
 
   iconsObject->Set(env->context(),
-              FIXED_ONE_BYTE_STRING(env->isolate(), "info"),
+              FIXED_ONE_BYTE_STRING(env->isolate(), "INFO"),
               Uint32::New(env->isolate(), MB_ICONINFORMATION));
 #else
   iconsObject->Set(env->context(),
@@ -122,7 +122,7 @@ Local<Object> CreateIconsConstObject(Environment *env) {
               Uint32::New(env->isolate(), 0));
 
   iconsObject->Set(env->context(),
-              FIXED_ONE_BYTE_STRING(env->isolate(), "info"),
+              FIXED_ONE_BYTE_STRING(env->isolate(), "INFO"),
               Uint32::New(env->isolate(), 0));
 #endif  // WIN32
 
