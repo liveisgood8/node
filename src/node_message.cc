@@ -278,6 +278,25 @@ Local<Object> CreateResultsConstObject(Environment* env) {
   return scope.Escape(resultsObject);
 }
 
+Local<Object> CreateUtilsConstObject(Environment* env) {
+  EscapableHandleScope scope(env->isolate());
+
+  auto utilsObject = Object::New(env->isolate());
+
+#ifdef WIN32
+  utilsObject->Set(env->context(),
+                   FIXED_ONE_BYTE_STRING(env->isolate(), "ALWAYS_ON_TOP"),
+                   Uint32::New(env->isolate(), MB_TOPMOST));
+#else
+  utilsObject->Set(env->context(),
+                   FIXED_ONE_BYTE_STRING(env->isolate(), "ALWAYS_ON_TOP"),
+                   Uint32::New(env->isolate(), 0));
+
+#endif  // WIN32
+
+  return scope.Escape(utilsObject);
+}
+
 void Initialize(Local<Object> target,
                 Local<Value> unused,
                 Local<Context> context,
@@ -296,6 +315,10 @@ void Initialize(Local<Object> target,
   target->Set(env->context(),
               FIXED_ONE_BYTE_STRING(env->isolate(), "Results"),
               CreateResultsConstObject(env));
+
+    target->Set(env->context(),
+              FIXED_ONE_BYTE_STRING(env->isolate(), "Utils"),
+              CreateUtilsConstObject(env));
 }
 
 }  // namespace message
