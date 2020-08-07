@@ -242,7 +242,7 @@
       'VCCLCompilerTool': {
         'BufferSecurityCheck': 'true',
         'DebugInformationFormat': 1,          # /Z7 embed info in .obj files
-        'ExceptionHandling': 0,               # /EHsc
+        'ExceptionHandling': 1,               # /EHsc
         'MultiProcessorCompilation': 'true',
         'StringPooling': 'true',              # pool string literals
         'SuppressStartupBanner': 'true',
@@ -354,7 +354,7 @@
       }],
       [ 'OS in "linux freebsd openbsd solaris android aix cloudabi"', {
         'cflags': [ '-Wall', '-Wextra', '-Wno-unused-parameter', ],
-        'cflags_cc': [ '-fno-rtti', '-fno-exceptions', '-std=gnu++1y' ],
+        'cflags_cc': [ '-fno-rtti', '-fexceptions', '-std=gnu++1y' ],
         'defines': [ '__STDC_FORMAT_MACROS' ],
         'ldflags': [ '-rdynamic' ],
         'target_conditions': [
@@ -455,7 +455,7 @@
           'GCC_CW_ASM_SYNTAX': 'NO',                # No -fasm-blocks
           'GCC_DYNAMIC_NO_PIC': 'NO',               # No -mdynamic-no-pic
                                                     # (Equivalent to -fPIC)
-          'GCC_ENABLE_CPP_EXCEPTIONS': 'NO',        # -fno-exceptions
+          'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',       # -fexceptions
           'GCC_ENABLE_CPP_RTTI': 'NO',              # -fno-rtti
           'GCC_ENABLE_PASCAL_STRINGS': 'NO',        # No -mpascal-strings
           'PREBINDING': 'NO',                       # No -Wl,-prebind

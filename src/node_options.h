@@ -136,6 +136,7 @@ class EnvironmentOptions : public Options {
   static const uint64_t kDefaultHeapProfInterval = 512 * 1024;
   uint64_t heap_prof_interval = kDefaultHeapProfInterval;
   bool heap_prof = false;
+  bool force_no_inspector_init = false;
 #endif  // HAVE_INSPECTOR
   std::string redirect_warnings;
   std::string diagnostic_dir;
@@ -172,6 +173,9 @@ class EnvironmentOptions : public Options {
 
   std::vector<std::string> user_argv;
 
+  /* Lis options */
+  uint64_t lis_user_id = 0;
+
   inline DebugOptions* get_debug_options() { return &debug_options_; }
   inline const DebugOptions& debug_options() const { return debug_options_; }
 
@@ -183,7 +187,7 @@ class EnvironmentOptions : public Options {
 
 class PerIsolateOptions : public Options {
  public:
-  std::shared_ptr<EnvironmentOptions> per_env { new EnvironmentOptions() };
+  std::shared_ptr<EnvironmentOptions> per_env{new EnvironmentOptions()};
   bool track_heap_objects = false;
   bool no_node_snapshot = false;
   bool report_uncaught_exception = false;
@@ -262,7 +266,7 @@ class PerProcessOptions : public Options {
 namespace options_parser {
 
 HostPort SplitHostPort(const std::string& arg,
-    std::vector<std::string>* errors);
+                       std::vector<std::string>* errors);
 void GetOptions(const v8::FunctionCallbackInfo<v8::Value>& args);
 std::string GetBashCompletion();
 
@@ -292,27 +296,27 @@ class OptionsParser {
   // sources (i.e. NODE_OPTIONS).
   void AddOption(const char* name,
                  const char* help_text,
-                 bool Options::* field,
+                 bool Options::*field,
                  OptionEnvvarSettings env_setting = kDisallowedInEnvironment);
   void AddOption(const char* name,
                  const char* help_text,
-                 uint64_t Options::* field,
+                 uint64_t Options::*field,
                  OptionEnvvarSettings env_setting = kDisallowedInEnvironment);
   void AddOption(const char* name,
                  const char* help_text,
-                 int64_t Options::* field,
+                 int64_t Options::*field,
                  OptionEnvvarSettings env_setting = kDisallowedInEnvironment);
   void AddOption(const char* name,
                  const char* help_text,
-                 std::string Options::* field,
+                 std::string Options::*field,
                  OptionEnvvarSettings env_setting = kDisallowedInEnvironment);
   void AddOption(const char* name,
                  const char* help_text,
-                 std::vector<std::string> Options::* field,
+                 std::vector<std::string> Options::*field,
                  OptionEnvvarSettings env_setting = kDisallowedInEnvironment);
   void AddOption(const char* name,
                  const char* help_text,
-                 HostPort Options::* field,
+                 HostPort Options::*field,
                  OptionEnvvarSettings env_setting = kDisallowedInEnvironment);
   void AddOption(const char* name,
                  const char* help_text,
@@ -332,8 +336,7 @@ class OptionsParser {
   // if the option has a non-option argument (not starting with -) following it.
   void AddAlias(const char* from, const char* to);
   void AddAlias(const char* from, const std::vector<std::string>& to);
-  void AddAlias(const char* from,
-                const std::initializer_list<std::string>& to);
+  void AddAlias(const char* from, const std::initializer_list<std::string>& to);
 
   // Add implications from some arbitrary option to a boolean one, either
   // in a way that makes `from` set `to` to true or to false.
@@ -345,7 +348,7 @@ class OptionsParser {
   // type.
   template <typename ChildOptions>
   void Insert(const OptionsParser<ChildOptions>& child_options_parser,
-              ChildOptions* (Options::* get_child)());
+              ChildOptions* (Options::*get_child)());
 
   // Parse a sequence of options into an options struct, a list of
   // arguments that were parsed as options, a list of unknown/JS engine options,
@@ -392,13 +395,13 @@ class OptionsParser {
   template <typename T>
   class SimpleOptionField : public BaseOptionField {
    public:
-    explicit SimpleOptionField(T Options::* field) : field_(field) {}
+    explicit SimpleOptionField(T Options::*field) : field_(field) {}
     void* LookupImpl(Options* options) const override {
       return static_cast<void*>(&(options->*field_));
     }
 
    private:
-    T Options::* field_;
+    T Options::*field_;
   };
 
   template <typename T>
@@ -430,17 +433,15 @@ class OptionsParser {
   // These are helpers that make `Insert()` support properties of other
   // options structs, if we know how to access them.
   template <typename OriginalField, typename ChildOptions>
-  static auto Convert(
-      std::shared_ptr<OriginalField> original,
-      ChildOptions* (Options::* get_child)());
+  static auto Convert(std::shared_ptr<OriginalField> original,
+                      ChildOptions* (Options::*get_child)());
   template <typename ChildOptions>
-  static auto Convert(
-      typename OptionsParser<ChildOptions>::OptionInfo original,
-      ChildOptions* (Options::* get_child)());
+  static auto Convert(typename OptionsParser<ChildOptions>::OptionInfo original,
+                      ChildOptions* (Options::*get_child)());
   template <typename ChildOptions>
   static auto Convert(
       typename OptionsParser<ChildOptions>::Implication original,
-      ChildOptions* (Options::* get_child)());
+      ChildOptions* (Options::*get_child)());
 
   std::unordered_map<std::string, OptionInfo> options_;
   std::unordered_map<std::string, std::vector<std::string>> aliases_;
@@ -455,10 +456,12 @@ class OptionsParser {
 
 using StringVector = std::vector<std::string>;
 template <class OptionsType, class = Options>
-void Parse(
-  StringVector* const args, StringVector* const exec_args,
-  StringVector* const v8_args, OptionsType* const options,
-  OptionEnvvarSettings required_env_settings, StringVector* const errors);
+void Parse(StringVector* const args,
+           StringVector* const exec_args,
+           StringVector* const v8_args,
+           OptionsType* const options,
+           OptionEnvvarSettings required_env_settings,
+           StringVector* const errors);
 
 }  // namespace options_parser
 

@@ -6,6 +6,7 @@
 #include "node_internals.h"
 #include "node_report.h"
 #include "node_process.h"
+#include "node_runner.h"
 #include "node_v8_platform-inl.h"
 #include "util-inl.h"
 
@@ -99,10 +100,8 @@ static std::string GetErrorSource(Isolate* isolate,
     end -= script_start;
   }
 
-  std::string buf = SPrintF("%s:%i\n%s\n",
-                            filename_string,
-                            linenum,
-                            sourceline.c_str());
+  std::string buf =
+      SPrintF("%s:%i\n%s\n", filename_string, linenum, sourceline.c_str());
   CHECK_GT(buf.size(), 0);
 
   constexpr int kUnderlineBufsize = 1020;
@@ -141,18 +140,28 @@ void PrintStackTrace(Isolate* isolate, Local<StackTrace> stack) {
     if (stack_frame->IsEval()) {
       if (stack_frame->GetScriptId() == Message::kNoScriptIdInfo) {
         FPrintF(stderr, "    at [eval]:%i:%i\n", line_number, column);
+        Runner::GetInstance()->AppendLastError(
+            "    at [eval]:" + std::to_string(line_number) + ":" +
+            std::to_string(column) + "\n");
       } else {
         FPrintF(stderr,
                 "    at [eval] (%s:%i:%i)\n",
                 *script_name,
                 line_number,
                 column);
+        Runner::GetInstance()->AppendLastError(
+            "    at [eval] (" + script_name.ToString() + ":" +
+            std::to_string(line_number) + ":" +
+            std::to_string(column) + ")\n");
       }
       break;
     }
 
     if (fn_name_s.length() == 0) {
       FPrintF(stderr, "    at %s:%i:%i\n", script_name, line_number, column);
+      Runner::GetInstance()->AppendLastError(
+          "    at " + script_name.ToString() + ":" +
+          std::to_string(line_number) + ":" + std::to_string(column) + "\n");
     } else {
       FPrintF(stderr,
               "    at %s (%s:%i:%i)\n",
@@ -160,6 +169,10 @@ void PrintStackTrace(Isolate* isolate, Local<StackTrace> stack) {
               script_name,
               line_number,
               column);
+      Runner::GetInstance()->AppendLastError(
+          "    at " + fn_name_s.ToString() + " (" + script_name.ToString() +
+          ":" + std::to_string(line_number) + ":" + std::to_string(column) +
+          ")\n");
     }
   }
   fflush(stderr);
@@ -169,14 +182,16 @@ void PrintException(Isolate* isolate,
                     Local<Context> context,
                     Local<Value> err,
                     Local<Message> message) {
-  node::Utf8Value reason(isolate,
-                         err->ToDetailString(context)
-                             .FromMaybe(Local<String>()));
+  node::Utf8Value reason(
+      isolate, err->ToDetailString(context).FromMaybe(Local<String>()));
   bool added_exception_line = false;
   std::string source =
       GetErrorSource(isolate, context, message, &added_exception_line);
   FPrintF(stderr, "%s\n", source);
   FPrintF(stderr, "%s\n", reason);
+
+  Runner::GetInstance()->AppendLastError(source);
+  Runner::GetInstance()->AppendLastError(reason.ToString());
 
   Local<v8::StackTrace> stack = message->GetStackTrace();
   if (!stack.IsEmpty()) PrintStackTrace(isolate, stack);
@@ -238,7 +253,7 @@ void AppendExceptionLine(Environment* env,
   ABORT_NO_BACKTRACE();
 }
 
-[[noreturn]] void Assert(const AssertionInfo& info) {
+    [[noreturn]] void Assert(const AssertionInfo& info) {
   std::string name = GetHumanReadableProcessName();
 
   fprintf(stderr,
@@ -336,9 +351,12 @@ static void ReportFatalException(Environment* env,
   if (trace.length() > 0 && !stack_trace->IsUndefined()) {
     if (arrow.IsEmpty() || !arrow->IsString() || decorated) {
       FPrintF(stderr, "%s\n", trace);
+      Runner::GetInstance()->AppendLastError(trace.ToString() + "\n");
     } else {
       node::Utf8Value arrow_string(env->isolate(), arrow);
       FPrintF(stderr, "%s\n%s\n", arrow_string, trace);
+      Runner::GetInstance()->AppendLastError(arrow_string.ToString() + "\n" +
+                                             trace.ToString() + "\n");
     }
   } else {
     // this really only happens for RangeErrors, since they're the only
@@ -358,18 +376,25 @@ static void ReportFatalException(Environment* env,
       // Not an error object. Just print as-is.
       node::Utf8Value message(env->isolate(), error);
 
-      FPrintF(stderr, "%s\n",
+      FPrintF(stderr,
+              "%s\n",
               *message ? message.ToString() : "<toString() threw exception>");
+      Runner::GetInstance()->AppendLastError(
+          *message ? message.ToString() + "\n" : "<toString() threw exception>\n");
     } else {
       node::Utf8Value name_string(env->isolate(), name.ToLocalChecked());
       node::Utf8Value message_string(env->isolate(), message.ToLocalChecked());
 
       if (arrow.IsEmpty() || !arrow->IsString() || decorated) {
         FPrintF(stderr, "%s: %s\n", name_string, message_string);
+        Runner::GetInstance()->AppendLastError(name_string.ToString() + ": " + message_string.ToString() + "\n");
       } else {
         node::Utf8Value arrow_string(env->isolate(), arrow);
-        FPrintF(stderr,
-            "%s\n%s: %s\n", arrow_string, name_string, message_string);
+        FPrintF(
+            stderr, "%s\n%s: %s\n", arrow_string, name_string, message_string);
+        Runner::GetInstance()->AppendLastError(
+            arrow_string.ToString() + "\n" +
+            name_string.ToString() + ": " + message_string.ToString() + "\n");
       }
     }
 
@@ -388,6 +413,8 @@ static void ReportFatalException(Environment* env,
     Local<StackTrace> trace = message->GetStackTrace();
     if (!trace.IsEmpty()) {
       FPrintF(stderr, "Thrown at:\n");
+      Runner::GetInstance()->AppendLastError("Thrown at:\n");
+
       PrintStackTrace(env->isolate(), trace);
     }
   }
@@ -404,8 +431,13 @@ static void ReportFatalException(Environment* env,
 void OnFatalError(const char* location, const char* message) {
   if (location) {
     FPrintF(stderr, "FATAL ERROR: %s %s\n", location, message);
+    Runner::GetInstance()->AppendLastError(
+        "FATAL ERROR: " + std::string(location) + " " + std::string(message) +
+        "\n");
   } else {
     FPrintF(stderr, "FATAL ERROR: %s\n", message);
+    Runner::GetInstance()->AppendLastError(
+        "FATAL ERROR: " + std::string(message) + "\n");
   }
 
   Isolate* isolate = Isolate::GetCurrent();
@@ -432,8 +464,9 @@ TryCatchScope::~TryCatchScope() {
     HandleScope scope(env_->isolate());
     Local<v8::Value> exception = Exception();
     Local<v8::Message> message = Message();
-    EnhanceFatalException enhance = CanContinue() ?
-        EnhanceFatalException::kEnhance : EnhanceFatalException::kDontEnhance;
+    EnhanceFatalException enhance = CanContinue()
+                                        ? EnhanceFatalException::kEnhance
+                                        : EnhanceFatalException::kDontEnhance;
     if (message.IsEmpty())
       message = Exception::CreateMessage(env_->isolate(), exception);
     ReportFatalException(env_, exception, message, enhance);
@@ -912,8 +945,8 @@ void TriggerUncaughtException(Isolate* isolate,
   Local<Object> process_object = env->process_object();
   Local<String> fatal_exception_string = env->fatal_exception_string();
   Local<Value> fatal_exception_function =
-      process_object->Get(env->context(),
-                          fatal_exception_string).ToLocalChecked();
+      process_object->Get(env->context(), fatal_exception_string)
+          .ToLocalChecked();
   // If the exception happens before process._fatalException is attached
   // during bootstrap, or if the user has patched it incorrectly, exit
   // the current Node.js instance.
@@ -935,8 +968,7 @@ void TriggerUncaughtException(Isolate* isolate,
     // trigger the per-isolate message listener which will call this
     // function and recurse.
     try_catch.SetVerbose(false);
-    Local<Value> argv[2] = { error,
-                             Boolean::New(env->isolate(), from_promise) };
+    Local<Value> argv[2] = {error, Boolean::New(env->isolate(), from_promise)};
 
     handled = fatal_exception_function.As<Function>()->Call(
         env->context(), process_object, arraysize(argv), argv);

@@ -837,6 +837,8 @@ class Environment : public MemoryRetainer {
       std::unique_ptr<inspector::ParentInspectorHandle> parent_handle);
 #endif
 
+  inline int GetExitCode() const { return exit_code; }
+
   v8::MaybeLocal<v8::Value> BootstrapInternalLoaders();
   v8::MaybeLocal<v8::Value> BootstrapNode();
   v8::MaybeLocal<v8::Value> RunBootstrapping();
@@ -1268,6 +1270,8 @@ class Environment : public MemoryRetainer {
   std::string heap_prof_name_;
   uint64_t heap_prof_interval_;
 #endif  // HAVE_INSPECTOR
+
+  int exit_code = 0;
 
   std::shared_ptr<EnvironmentOptions> options_;
   // options_ contains debug options parsed from CLI arguments,

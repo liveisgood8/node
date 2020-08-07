@@ -26,6 +26,8 @@
 #define NODE_MINOR_VERSION 7
 #define NODE_PATCH_VERSION 0
 
+#define NODE_NEXUS_VERSION 14
+
 #define NODE_VERSION_IS_LTS 0
 #define NODE_VERSION_LTS_CODENAME ""
 
@@ -48,16 +50,21 @@
 # endif
 #else
 // NODE_TAG is passed without quotes when rc.exe is run from msbuild
-# define NODE_EXE_VERSION NODE_STRINGIFY(NODE_MAJOR_VERSION) "." \
-                          NODE_STRINGIFY(NODE_MINOR_VERSION) "." \
-                          NODE_STRINGIFY(NODE_PATCH_VERSION)     \
+#define NODE_EXE_VERSION  NODE_STRINGIFY(NODE_MAJOR_VERSION) "."      \
+                          NODE_STRINGIFY(NODE_MINOR_VERSION) "."      \
+                          NODE_STRINGIFY(NODE_PATCH_VERSION)          \
                           NODE_STRINGIFY(NODE_TAG)
-#endif
+                          
 
-# define NODE_VERSION_STRING  NODE_STRINGIFY(NODE_MAJOR_VERSION) "." \
-                              NODE_STRINGIFY(NODE_MINOR_VERSION) "." \
-                              NODE_STRINGIFY(NODE_PATCH_VERSION)     \
+
+#endif           
+#define NODE_VERSION_STRING   NODE_STRINGIFY(NODE_MAJOR_VERSION) "."  \
+                              NODE_STRINGIFY(NODE_MINOR_VERSION) "."  \
+                              NODE_STRINGIFY(NODE_PATCH_VERSION)      \
                               NODE_TAG
+
+#define NODE_NEXUS_VERSION_STRING "v" NODE_STRINGIFY(NODE_NEXUS_VERSION)
+
 #ifndef NODE_EXE_VERSION
 # define NODE_EXE_VERSION NODE_VERSION_STRING
 #endif

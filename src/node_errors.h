@@ -208,6 +208,7 @@ void PerIsolateMessageListener(v8::Local<v8::Message> message,
 
 void DecorateErrorStack(Environment* env,
                         const errors::TryCatchScope& try_catch);
+
 }  // namespace errors
 
 }  // namespace node

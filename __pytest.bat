@@ -1,0 +1,1 @@
+python tools\test.py --mode=release  -J default addons js-native-api node-api doctool

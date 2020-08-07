@@ -18,6 +18,7 @@
 // DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
+#include "node_main.h"
 
 #include "node.h"
 #include <cstdio>
@@ -84,7 +85,11 @@ int wmain(int argc, wchar_t* wargv[]) {
   }
   argv[argc] = nullptr;
   // Now that conversion is done, we can finally start.
-  return node::Start(argc, argv);
+  try {
+    return node::Start(argc, argv);
+  } catch (const node::NodeException &err) {
+    return err.GetExitCode();
+  }
 }
 #else
 // UNIX
@@ -138,6 +143,22 @@ int main(int argc, char* argv[]) {
   // calls elsewhere in the program (e.g., any logging from V8.)
   setvbuf(stdout, nullptr, _IONBF, 0);
   setvbuf(stderr, nullptr, _IONBF, 0);
-  return node::Start(argc, argv);
+  try {
+    return node::Start(argc, argv);
+  } catch (const node::NodeException& err) {
+    return err.GetExitCode();
+  }
 }
 #endif
+
+node::Runner* GetRunner() {
+  return node::GetRunner();
+}
+
+int RunNode(int argc, const char* argv[]) {
+  try {
+    return node::Start(argc, const_cast<char**>(argv));
+  } catch (const node::NodeException& err) {
+    return err.GetExitCode();
+  }
+}

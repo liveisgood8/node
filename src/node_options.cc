@@ -516,6 +516,10 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
             &EnvironmentOptions::force_repl);
   AddAlias("-i", "--interactive");
 
+  AddOption("--lis-user-id",
+            "specified LIS user id",
+            &EnvironmentOptions::lis_user_id);
+
   AddOption("--napi-modules", "", NoOp{}, kAllowedInEnvironment);
 
   AddOption("--tls-keylog",

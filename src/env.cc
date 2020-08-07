@@ -467,11 +467,9 @@ Environment::~Environment() {
   // them; with Worker threads, we have the opportunity to be stricter.
   // Also, since the main thread usually stops just before the process exits,
   // this is far less relevant here.
-  if (!is_main_thread()) {
-    // Dereference all addons that were loaded into this environment.
-    for (binding::DLib& addon : loaded_addons_) {
-      addon.Close();
-    }
+  // Dereference all addons that were loaded into this environment.
+  for (binding::DLib& addon : loaded_addons_) {
+    addon.Close();
   }
 
   CHECK_EQ(base_object_count_, 0);
@@ -971,6 +969,7 @@ void Environment::Exit(int exit_code) {
                     StackTrace::CurrentStackTrace(
                         isolate(), stack_trace_limit(), StackTrace::kDetailed));
   }
+  this->exit_code = exit_code;
   process_exit_handler_(this, exit_code);
 }
 

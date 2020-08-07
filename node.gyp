@@ -62,6 +62,7 @@
       'lib/_http_server.js',
       'lib/https.js',
       'lib/inspector.js',
+      'lib/logger.js',
       'lib/module.js',
       'lib/net.js',
       'lib/os.js',
@@ -590,6 +591,7 @@
         'src/node_http2.cc',
         'src/node_i18n.cc',
         'src/node_main_instance.cc',
+        'src/node_message.cc',
         'src/node_messaging.cc',
         'src/node_metadata.cc',
         'src/node_native_module.cc',
@@ -614,9 +616,12 @@
         'src/node_types.cc',
         'src/node_url.cc',
         'src/node_util.cc',
+        'src/node_runner.cc',
+        'src/node_runner_script.cc',
         'src/node_v8.cc',
         'src/node_wasi.cc',
         'src/node_watchdog.cc',
+        'src/node_logger.cc',
         'src/node_worker.cc',
         'src/node_zlib.cc',
         'src/pipe_wrap.cc',
@@ -639,6 +644,8 @@
         'src/udp_wrap.cc',
         'src/util.cc',
         'src/uv.cc',
+
+        'deps/easylogging/easylogging++.cc',
         # headers to make for a more pleasant IDE experience
         'src/aliased_buffer.h',
         'src/aliased_struct.h',
@@ -703,6 +710,8 @@
         'src/node_process.h',
         'src/node_report.h',
         'src/node_revert.h',
+        'src/node_runner.h',
+        'src/node_runner_script.h',
         'src/node_root_certs.h',
         'src/node_sockaddr.h',
         'src/node_sockaddr-inl.h',
@@ -713,6 +722,7 @@
         'src/node_v8_platform-inl.h',
         'src/node_wasi.h',
         'src/node_watchdog.h',
+        'src/node_logger.h',
         'src/node_worker.h',
         'src/pipe_wrap.h',
         'src/req_wrap.h',
@@ -739,6 +749,7 @@
         'src/util-inl.h',
         # Dependency headers
         'deps/v8/include/v8.h',
+        'deps/easylogging/easylogging++.h',
         # javascript files to make for an even more pleasant IDE experience
         '<@(library_files)',
         # node.gyp is added by default, common.gypi is added for change detection
@@ -751,6 +762,7 @@
       },
 
       'defines': [
+        'ELPP_NO_DEFAULT_LOG_FILE',
         'NODE_ARCH="<(target_arch)"',
         'NODE_PLATFORM="<(OS)"',
         'NODE_WANT_INTERNALS=1',

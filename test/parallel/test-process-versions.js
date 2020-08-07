@@ -26,7 +26,6 @@ const commonTemplate = /^\d+\.\d+\.\d+(?:-.*)?$/;
 assert(commonTemplate.test(process.versions.ares));
 assert(commonTemplate.test(process.versions.brotli));
 assert(commonTemplate.test(process.versions.llhttp));
-assert(commonTemplate.test(process.versions.node));
 assert(commonTemplate.test(process.versions.uv));
 assert(commonTemplate.test(process.versions.zlib));
 
