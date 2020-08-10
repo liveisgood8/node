@@ -130,10 +130,6 @@ int NodeMainInstance::Run(
     const std::function<void(Environment* env, bool isRunSuccess)> envHandler) {
 #if HAVE_INSPECTOR && defined(__POSIX__) && !defined(NODE_SHARED_MODE)
 #define CLEAN_UP(is_run_success)                                               \
-  env->set_can_call_into_js(false);                                            \
-  env->stop_sub_worker_contexts();                                             \
-  ResetStdio();                                                                \
-  env->RunCleanup();                                                           \
   struct sigaction act;                                                        \
   memset(&act, 0, sizeof(act));                                                \
   for (unsigned nr = 1; nr < kMaxSignal; nr += 1) {                            \
@@ -141,19 +137,11 @@ int NodeMainInstance::Run(
     act.sa_handler = (nr == SIGPIPE) ? SIG_IGN : SIG_DFL;                      \
     CHECK_EQ(0, sigaction(nr, &act, nullptr));                                 \
   }                                                                            \
-  RunAtExit(env.get());                                                        \
-  per_process::v8_platform.DrainVMTasks(isolate_);                             \
   if (envHandler) {                                                            \
     envHandler(env.get(), is_run_success);                                     \
   }
 #else
 #define CLEAN_UP(is_run_success)                                               \
-  env->set_can_call_into_js(false);                                            \
-  env->stop_sub_worker_contexts();                                             \
-  ResetStdio();                                                                \
-  env->RunCleanup();                                                           \
-  RunAtExit(env.get());                                                        \
-  per_process::v8_platform.DrainVMTasks(isolate_);                             \
   if (envHandler) {                                                            \
     envHandler(env.get(), is_run_success);                                     \
   }
