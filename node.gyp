@@ -558,7 +558,6 @@
         'src/node_http2.cc',
         'src/node_i18n.cc',
         'src/node_main_instance.cc',
-        'src/node_message.cc',
         'src/node_messaging.cc',
         'src/node_metadata.cc',
         'src/node_native_module.cc',

@@ -58,7 +58,6 @@
   V(http_parser)                                                               \
   V(inspector)                                                                 \
   V(js_stream)                                                                 \
-  V(message)                                                                   \
   V(messaging)                                                                 \
   V(module_wrap)                                                               \
   V(native_module)                                                             \
